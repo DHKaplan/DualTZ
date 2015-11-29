@@ -1,5 +1,10 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "BTVIBE_KEY": 1,
+        "DATE_FORMAT_KEY": 0,
+        "WEATHER_CITY_KEY": 3,
+        "WEATHER_TEMPERATURE_KEY": 2
+    },
     "capabilities": [
         "configurable"
     ],
@@ -42,7 +47,7 @@
     "targetPlatforms": [
         "basalt"
     ],
-    "uuid": "c3985f15-4fe7-42ef-8fab-bb5d98f11e76",
+    "uuid": "3f2dde29-e14f-4a76-8431-66fbf6b2caba",
     "versionLabel": "1.00",
     "watchapp": {
         "watchface": true
