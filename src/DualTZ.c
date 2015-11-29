@@ -20,8 +20,7 @@ Layer        *BatteryLineLayer;
 
 GFont        fontMonaco13;
 GFont		     fontRobotoCondensed21;
-GFont        fontRobotoBoldSubset40;
-GFont        fontRobotoBoldSubset45;
+GFont        fontRobotoBoldSubset35;
 
 static int BTConnected = 1;
 static int BTVibesDone = 0;
@@ -41,7 +40,7 @@ static char date_text[] = "Mon 05/08/48";
 static char date2_text[] = "Mon 05/08/48";
 static char seconds_text[] = "00";
 static char date_format[]="%a %m/%d/%y";
-static char text_location[18];
+static char text_location[12];
 static char text_location2[18];
 static char text_degrees[] = "====";
 
@@ -113,7 +112,7 @@ void battery_line_layer_update_callback(Layer *BatteryLineLayer, GContext* batct
      }
   
   //Battery % Markers
-      graphics_context_set_fill_color(batctx, GColorWhite);
+      graphics_context_set_fill_color(batctx, GColorBlack);
       graphics_fill_rect(batctx, GRect(89, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(79, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(69, 1, 3, 4), 3, GCornerNone);
@@ -123,8 +122,6 @@ void battery_line_layer_update_callback(Layer *BatteryLineLayer, GContext* batct
       graphics_fill_rect(batctx, GRect(29, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(19, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(9, 1, 3, 4), 3, GCornerNone);
-
-
 }
 void handle_bluetooth(bool connected) {
       if (connected) {
@@ -260,13 +257,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         tempint = ((tempint * 9) / 5) + 32;
   
          // Assemble full string and display
-         snprintf(text_degrees, 5, "%dF", tempint);
+         snprintf(text_degrees, 5, "%dF ", tempint);
          }  
         else {
           strcpy(text_degrees, "N/A");  
         } 
         text_layer_set_text(text_degrees_layer, text_degrees); 
-      
+
         APP_LOG(APP_LOG_LEVEL_INFO, "c Processed Degrees -> %s", text_degrees);
         break;
       
@@ -326,18 +323,17 @@ void handle_deinit(void) {
 
 
   fonts_unload_custom_font(fontMonaco13);
-  fonts_unload_custom_font(fontRobotoBoldSubset40);
-  fonts_unload_custom_font(fontRobotoBoldSubset45);
+  fonts_unload_custom_font(fontRobotoBoldSubset35);
 
   window_destroy(window);
 }
 
 void handle_init(void) {
 
-  GColor BGCOLOR1   = COLOR_FALLBACK(GColorKellyGreen, GColorBlack);
+  GColor BGCOLOR1   = COLOR_FALLBACK(GColorDukeBlue, GColorBlack);
   BGColorHold = BGCOLOR1;
   
-  GColor BGCOLOR2   = COLOR_FALLBACK(GColorDukeBlue, GColorBlack);
+  GColor BGCOLOR2   = COLOR_FALLBACK(GColorDarkGreen, GColorBlack);
   BGColorHold = BGCOLOR1;
 
   GColor TEXTCOLOR = COLOR_FALLBACK(GColorWhite, GColorWhite);
@@ -348,8 +344,7 @@ void handle_init(void) {
   window_set_background_color(window, BGCOLOR1);
 
   fontMonaco13           = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MONACO_13));
-  fontRobotoBoldSubset40 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_40));
-  fontRobotoBoldSubset45 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_45));
+  fontRobotoBoldSubset35 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_35));
   Layer *window_layer = window_get_root_layer(window);
 
   // Register callbacks
@@ -362,7 +357,7 @@ void handle_init(void) {
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
  
   //Location 1
-  text_location_layer = text_layer_create(GRect(1, 1, 110, 17)); 
+  text_location_layer = text_layer_create(GRect(1, 1, 103, 17)); 
   text_layer_set_text_alignment(text_location_layer, GTextAlignmentCenter);		
   text_layer_set_text(text_location_layer, text_location); 
   text_layer_set_font(text_location_layer, fontMonaco13);
@@ -371,7 +366,7 @@ void handle_init(void) {
   layer_add_child(window_layer, text_layer_get_layer(text_location_layer));
   
   //Temperature
-  text_degrees_layer = text_layer_create(GRect(111, 1, 35, 17)); 
+  text_degrees_layer = text_layer_create(GRect(104, 1, 40, 17)); 
   text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		
   text_layer_set_text(text_degrees_layer, text_degrees); 
   text_layer_set_font(text_degrees_layer, fontMonaco13);
@@ -410,7 +405,7 @@ void handle_init(void) {
 
   // Time of Day 1
   text_time_layer = text_layer_create(GRect(1, 40, 144, 40));
-  text_layer_set_font(text_time_layer,fontRobotoBoldSubset40);
+  text_layer_set_font(text_time_layer,fontRobotoBoldSubset35);
   text_layer_set_text_color(text_time_layer, TEXTCOLOR);
   text_layer_set_background_color(text_time_layer, BGCOLOR1);
   text_layer_set_text_alignment(text_time_layer, GTextAlignmentCenter);
@@ -441,7 +436,7 @@ void handle_init(void) {
 
   // Time 2
   text_time2_layer = text_layer_create(GRect(1, 127, 144, 40));
-  text_layer_set_font(text_time2_layer,fontRobotoBoldSubset40);
+  text_layer_set_font(text_time2_layer,fontRobotoBoldSubset35);
 
   text_layer_set_text_color(text_time2_layer, TEXTCOLOR);
   text_layer_set_background_color(text_time2_layer, BGCOLOR2);

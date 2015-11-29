@@ -21,13 +21,13 @@
             {
                 "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
-                "name": "FONT_ROBOTO_BOLD_SUBSET_45",
+                "name": "FONT_ROBOTO_BOLD_SUBSET_40",
                 "type": "font"
             },
             {
                 "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
-                "name": "FONT_ROBOTO_BOLD_SUBSET_40",
+                "name": "FONT_ROBOTO_BOLD_SUBSET_35",
                 "type": "font"
             },
             {
