@@ -1,9 +1,16 @@
 {
     "appKeys": {
-        "BTVIBE_KEY": 1,
-        "DATE_FORMAT_KEY": 0,
-        "WEATHER_CITY_KEY": 3,
-        "WEATHER_TEMPERATURE_KEY": 2
+        "BT_LOSS_KEY": 5,
+        "DATE_FORMAT_KEY": 4,
+        "LOCAL_BG_COLOR_KEY": 0,
+        "LOCAL_TEXT_COLOR_KEY": 2,
+        "LOCATION_NAME_KEY": 8,
+        "LOW_BATTERY_KEY": 6,
+        "TZ2_BG_COLOR_KEY": 1,
+        "TZ2_TEXT_COLOR_KEY": 3,
+        "UTC_OFFSET_KEY": 7,
+        "WEATHER_CITY_KEY": 10,
+        "WEATHER_TEMPERATURE_KEY": 9
     },
     "capabilities": [
         "configurable"
@@ -32,12 +39,12 @@
             },
             {
                 "file": "fonts/HelveNeuLig.ttf",
-                "name": "FONT_HELV_NEW_LIGHT_15",
+                "name": "FONT_HELV_NEW_LIGHT_20",
                 "type": "font"
             },
             {
                 "file": "fonts/HelveNeuLig.ttf",
-                "name": "FONT_HELV_NEW_LIGHT_20",
+                "name": "FONT_HELV_NEW_LIGHT_15",
                 "type": "font"
             }
         ]
@@ -47,7 +54,7 @@
     "targetPlatforms": [
         "basalt"
     ],
-    "uuid": "3f2dde29-e14f-4a76-8431-66fbf6b2caba",
+    "uuid": "41c5fa52-387e-4f67-86a8-142a169c7a0c",
     "versionLabel": "1.00",
     "watchapp": {
         "watchface": true
