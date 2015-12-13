@@ -48,8 +48,6 @@ static int  WxLocationCall = 0;
 static int  intUTCAdjust = 0;
 static int  intUTCoffsethrs;
 static int  intUTCoffsetmin;
-static char BTVibeConfig[] = "0";
-static char LowBatteryConfig[] = "0";
 static char UTCOffsetConfig[] = "+00:00";
 static char strSign[] = "+";
 
@@ -71,9 +69,9 @@ static char PersistLocalBG[]    = "0xAAAAAA";
 static char PersistTZ2BG[]      = "0xFFFFFF";
 static char PersistLocalText[]  = "0xFFFFFF";
 static char PersistTZ2Text[]    = "0xFFFFFF";
-static char PersistDateFormat[] = "0";
-static char PersistBTLoss[]     = "0";
-static char PersistLow_Batt[]   = "0";
+static int  PersistDateFormat   = 0;
+static int  PersistBTLoss       = 0;
+static int  PersistLow_Batt     = 0;
 static char PersistUTCOffset[]  = "+00:00";
 static char PersistLocationName[18];
 
@@ -100,12 +98,11 @@ void handle_battery(BatteryChargeState charge_state) {
   }
 
   //
-  if (batterychargepct < 30) {
-     if (BatteryVibesDone == 0) {            // Do Once
+  if ((batterychargepct < 30) && (PersistLow_Batt == 1) &&  (BatteryVibesDone == 0)) {          
          BatteryVibesDone = 1;
          vibes_long_pulse();
       }
-  }
+  
     layer_mark_dirty(BatteryLineLayer);
 }
 
@@ -158,14 +155,8 @@ void handle_bluetooth(bool connected) {
       if (connected) {
          BTConnected = 1;     // Connected
          BTVibesDone = 0;
-
     } else {
          BTConnected = 0;      // Not Connected
-
-         if ((BTVibesDone == 0) && (strcmp(PersistBTLoss ,"0") == 0)) {
-             BTVibesDone = 1;
-             vibes_long_pulse();
-         }
     }
   
     layer_mark_dirty(BTLayer);
@@ -176,16 +167,15 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
 
        GPoint BTLinePointStart;
        GPoint BTLinePointEnd;
-  
-      graphics_context_set_stroke_color(BT1ctx, TextColorHold2);
-      graphics_context_set_fill_color(BT1ctx, BGColorHold2);
-  
-      if (BTConnected == 0) {
-       
-            graphics_context_set_stroke_color(BT1ctx, GColorRed);
-            graphics_context_set_fill_color(BT1ctx, GColorWhite);
-            graphics_fill_rect(BT1ctx, layer_get_bounds(BTLayer), 0, GCornerNone);
-        
+      
+      if ((BTConnected == 0) && (PersistBTLoss == 1)) {
+              BTVibesDone = 1;
+              vibes_long_pulse();
+      }
+      if(BTConnected == 0) {   
+          graphics_context_set_stroke_color(BT1ctx, GColorRed);
+          graphics_context_set_fill_color(BT1ctx, GColorWhite);
+          graphics_fill_rect(BT1ctx, layer_get_bounds(BTLayer), 0, GCornerNone);
       
         // "X"" Line 1
           BTLinePointStart.x = 1;
@@ -204,6 +194,11 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
           graphics_draw_line(BT1ctx, BTLinePointStart, BTLinePointEnd);
          
       } else {   
+       BTVibesDone = 0; 
+      
+       graphics_context_set_stroke_color(BT1ctx, TextColorHold2);
+       graphics_context_set_fill_color(BT1ctx, BGColorHold2);
+  
 
        //Line 1
        BTLinePointStart.x = 10;
@@ -289,7 +284,7 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
 
 void handle_appfocus(bool in_focus){
     if (in_focus) {
-        handle_bluetooth(bluetooth_connection_service_peek());
+        //handle_bluetooth(bluetooth_connection_service_peek());
         FirstTime = 0;
     }
 }
@@ -417,7 +412,7 @@ void ProcessHexColor() {
      strcpy(DoubleHexIn, strGreen);
      intGreen = ConvertHextoDecimal();
   }  
-   APP_LOG(APP_LOG_LEVEL_ERROR, "Red = %d, Blue = %d, Green = %d", intRed, intBlue, intGreen);
+
   if(ProcessHexRetcode == 0) {
     ColorHold =  GColorFromRGB(intRed, intBlue, intGreen);
   } else {
@@ -438,16 +433,10 @@ void ProcessTimeZone() {
   intUTCoffsetmin = atoi(strMin);
   
   if(strcmp(strSign, "+")) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Sign is +");
     intUTCAdjust = (intUTCoffsethrs * -3600) - (intUTCoffsetmin * 60);
   } else {
     intUTCAdjust = (intUTCoffsethrs * 3600) + (intUTCoffsetmin * 60);
-        APP_LOG(APP_LOG_LEVEL_WARNING, "Sign is -");
-
-  }
-    
-   APP_LOG(APP_LOG_LEVEL_ERROR, "Process Timezone Hours = %s%d hours %s%d minutes", strSign, intUTCoffsethrs, strSign, intUTCoffsetmin);  
-  
+  }  
 }
 
 //************************************************************************************************************
@@ -458,14 +447,12 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   seconds_since_epoch = time(NULL);
 
   if((strcmp(seconds_text,"00") == 0) || (FirstTime == 0)) {
-     APP_LOG(APP_LOG_LEVEL_ERROR, "... In Handle Tick, Seconds = %s, First Time = %d", seconds_text, FirstTime);
      FirstTime = 1;
 
      // Adjust for gmtime 
     
      ProcessTimeZone(); 
     
-     APP_LOG(APP_LOG_LEVEL_WARNING, "intUTCAdjust = %d seconds", intUTCAdjust);
      if(strcmp(strSign, "+")) {
           seconds_since_epoch = seconds_since_epoch + intUTCAdjust;
      } else {
@@ -501,7 +488,6 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     
      strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);
      
-     APP_LOG(APP_LOG_LEVEL_ERROR, "before set of 2 dates");
      text_layer_set_text(text_date_layer,  date_text);
      text_layer_set_text(text_date2_layer, date2_text);
   
@@ -513,7 +499,6 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
      }
      
     //Always update Time of Day
-    APP_LOG(APP_LOG_LEVEL_ERROR, "... In Handle Tick, Updating time: %s", time_text);
 
     text_layer_set_text(text_time_layer,  time_text);
     text_layer_set_text(text_time2_layer, time2_text);  
@@ -522,11 +507,13 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     text_layer_set_text(text_location2_layer, text_location2);
 
     }// End of First Time / 0 seconds
+    
     if(tick_time->tm_min % 15 == 0) { // Only update wx/location every 15 minutes
-          APP_LOG(APP_LOG_LEVEL_ERROR, "... In Handle Tick, UPdating Temp");
+          APP_LOG(APP_LOG_LEVEL_ERROR, "... In Handle Tick, Updating Temp");
 
-        WxLocationCall = 1;
-        // Begin dictionary
+       // WxLocationCall = 1;
+        
+      // Begin dictionary
         DictionaryIterator *iter;
         app_message_outbox_begin(&iter);
 
@@ -543,23 +530,13 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         
 char UTCTempHold[] = ":";  
-/*    Tuple *high_contrast_t = dict_find(iter, KEY_HIGH_CONTRAST);
-  if(high_contrast_t && high_contrast_t->value->int8 > 0) {  // Read boolean as an integer
-    // Change color scheme
-    window_set_background_color(s_main_window, GColorBlack);
-    text_layer_set_text_color(s_text_layer, GColorWhite);
 
-    // Persist value
-    persist_write_bool(KEY_HIGH_CONTRAST, true);
-  } else {
-    persist_write_bool(KEY_HIGH_CONTRAST, false);
-  } */
 
     //****************
   
          APP_LOG(APP_LOG_LEVEL_WARNING, "In Inbox received callback*****************************************\n");
 
-      if(WxLocationCall == 0){
+     // if(WxLocationCall == 0){
          APP_LOG(APP_LOG_LEVEL_WARNING, "WxLocation Call = 0");
          Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
          APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Local BG Color...");
@@ -643,7 +620,8 @@ char UTCTempHold[] = ":";
          }
 
          ProcessHexColor();
-          
+         
+         TextColorHold2 = ColorHold;
          text_layer_set_text_color(text_TZ2_layer, ColorHold);
          text_layer_set_text_color(text_location2_layer, ColorHold);
          text_layer_set_text_color(text_date2_layer, ColorHold);
@@ -651,64 +629,63 @@ char UTCTempHold[] = ":";
          APP_LOG(APP_LOG_LEVEL_WARNING,    "    Processed Key 3: TZ2 text Color - %s\n", hexColorHold);
 
   //****************
-  
-         Tuple *Date_Format = dict_find(iterator, DATE_FORMAT_KEY);
-         APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Date Format...");
- 
-         APP_LOG(APP_LOG_LEVEL_WARNING,   "    Config Date Format is %s", Date_Format->value->cstring);
-         
-    
-         if((strcmp(Date_Format->value->cstring, "true") == 0)  || (strcmp(Date_Format->value->cstring, "false") == 0)){   // valid value
-            strcpy(date_type, Date_Format->value->cstring);
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value Date Format");
+        APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Date Format...");
+        Tuple *Date_Format = dict_find(iterator, DATE_FORMAT_KEY);
+        
+        if((Date_Format->value->uint8 == 0) || (Date_Format->value->uint8 == 1)){
+            PersistDateFormat = Date_Format->value->uint8;
+            APP_LOG(APP_LOG_LEVEL_WARNING, "    Found Config Value Date Format = %d", PersistDateFormat);
          } else {
-            strcpy(date_type, "true");
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default US Date Format");
-
+            PersistDateFormat = 1; // US Default
+            APP_LOG(APP_LOG_LEVEL_WARNING, "   Added Default 1 US Date Format");
          }  
   
-         if (strcmp(date_type, "true") == 0) { // US
+         if (PersistDateFormat == 1) { // US
              strcpy(date_format, "%b %e, %Y");
              APP_LOG(APP_LOG_LEVEL_WARNING, "    Processed Key 4: Date Format US\n");
          } else {
              strcpy(date_format, "%e %b %Y");   //Intl
              APP_LOG(APP_LOG_LEVEL_WARNING, "    Processed Key 4: Date Format Intl\n");
          }
-         text_layer_set_text(text_date_layer, date_text);
-        
-  
+         
+        text_layer_set_text(text_date_layer, date_text);
+   
   //****************
         APP_LOG(APP_LOG_LEVEL_WARNING, "Processing BT Loss...");
 
         Tuple *BT_LossVib = dict_find(iterator, BT_LOSS_KEY); 
   
-        strcpy(BTVibeConfig, BT_LossVib->value->cstring);
-  
-        if ((strcmp(BTVibeConfig, "0") == 0) || (strcmp(BTVibeConfig, "1") == 0)) {
-            strcpy(PersistBTLoss , BTVibeConfig);
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Valid Config BT Loss Key = %s", PersistBTLoss);
-           } else {
-            strcpy(PersistBTLoss ,"1");
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default BT Loss Key = %s", PersistBTLoss);
-           }
-  
-        APP_LOG(APP_LOG_LEVEL_WARNING,     "    Processed Key 5 BT_VIBRATE_KEY = %s\n", PersistBTLoss);
+       if((BT_LossVib->value->uint8 == 0) || (BT_LossVib->value->uint8 == 1)){  
+         PersistBTLoss = BT_LossVib->value->uint8; //Vibe on loss
+          APP_LOG(APP_LOG_LEVEL_WARNING, "    Found Config BT Loss Key = %d\n", PersistBTLoss);
+       } else {
+         PersistBTLoss = 0; //Default 0 
+         APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default  BT Loss Key = 0\n");
+       }
 
  //******************
-        APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Low Battry...");
-        Tuple *Low_Battery_Vib = dict_find(iterator, LOW_BATTERY_KEY); 
-  
-        strcpy(LowBatteryConfig, Low_Battery_Vib->value->cstring);
+        APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Low Battery...");
+        Tuple *Low_Battery_Vib = dict_find(iterator, LOW_BATTERY_KEY);
+      
+         
+        PersistLow_Batt = Low_Battery_Vib->value->uint8;
         
-        if ((strcmp(LowBatteryConfig, "0") == 0) || (strcmp(LowBatteryConfig, "1") == 0)) {   
-           strcpy(PersistLow_Batt, LowBatteryConfig);
-           APP_LOG(APP_LOG_LEVEL_WARNING, "    Valid Config Low Battery Key = %s", PersistLow_Batt);
-        } else {
-           strcpy(PersistLow_Batt, "1");
-           APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Low Batt Key = %s", PersistLow_Batt); 
+        switch(PersistLow_Batt) {
+       
+        case 0:   
+              APP_LOG(APP_LOG_LEVEL_WARNING, "    Valid Config Low Battery Key = 0");
+              break;
+           
+        case 1:
+              APP_LOG(APP_LOG_LEVEL_WARNING, "    Valid Config Low Battery Key = 1"); 
+              break;
+      
+        default:
+              PersistLow_Batt = 0;       
+              APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Low Battery Key = 0"); 
         }
-
-        APP_LOG(APP_LOG_LEVEL_WARNING,    "    Processed Key 6 LOW BATTERY_KEY = %s\n", PersistLow_Batt);
+        
+        APP_LOG(APP_LOG_LEVEL_WARNING,    "    Processed Key 6 LOW BATTERY_KEY = %d\n", PersistLow_Batt);
       
   //******************
         APP_LOG(APP_LOG_LEVEL_WARNING, "Processing UTC Offset...");
@@ -738,15 +715,15 @@ char UTCTempHold[] = ":";
             strcpy(PersistLocationName, Location_name->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Valid Config TZ2 Location Name = %s", PersistLocationName);
          } else {
-            strcpy(PersistLocationName, "Enter Name...");
+            strcpy(PersistLocationName, "UTC/GMT");
             APP_LOG(APP_LOG_LEVEL_WARNING,   "    Default Location Name 2 = %s", PersistLocationName);
          }
          
          APP_LOG(APP_LOG_LEVEL_WARNING, "    Processed Key 8 location name = %s\n", PersistLocationName);
         
-      } else { // Processing Wx Info
+    //  } else { // Processing Wx Info
   //******************
-        APP_LOG(APP_LOG_LEVEL_WARNING, "WxLoction Call = 1");
+        APP_LOG(APP_LOG_LEVEL_WARNING, "WxLocation Call = 1");
         APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Temp...");
 
             Tuple *Temperature = dict_find(iterator, WEATHER_TEMPERATURE_KEY);
@@ -782,7 +759,7 @@ char UTCTempHold[] = ":";
           APP_LOG(APP_LOG_LEVEL_WARNING, "    Ignored Key 10 Location Processing\n");
        }
         
-  }    
+//  }    
     FirstTime = 0;
 }
 
@@ -805,9 +782,9 @@ void handle_deinit(void) {
   persist_write_string(TZ2_BG_COLOR_KEY,     PersistTZ2BG);
   persist_write_string(LOCAL_TEXT_COLOR_KEY, PersistLocalText);
   persist_write_string(TZ2_TEXT_COLOR_KEY,   PersistTZ2Text);
-  persist_write_string(DATE_FORMAT_KEY,      PersistDateFormat);
-  persist_write_string(BT_LOSS_KEY,          PersistBTLoss);
-  persist_write_string(LOW_BATTERY_KEY,      PersistLow_Batt);
+  persist_write_int(DATE_FORMAT_KEY,         PersistDateFormat);
+  persist_write_int(BT_LOSS_KEY,             PersistBTLoss);
+  persist_write_int(LOW_BATTERY_KEY,         PersistLow_Batt);
   persist_write_string(UTC_OFFSET_KEY,       PersistUTCOffset);
   persist_write_string(LOCATION_NAME_KEY,    PersistLocationName);
   
@@ -1047,40 +1024,43 @@ void handle_init(void) {
 
   //Persistent Value VibOnBTLoss
   if(persist_exists(BT_LOSS_KEY)) {
-     persist_read_string(BT_LOSS_KEY, PersistBTLoss , sizeof(PersistBTLoss ));
+     PersistBTLoss = persist_read_int(BT_LOSS_KEY);
   }  else {
-     strcpy(PersistBTLoss , "0"); // Default
+     PersistBTLoss = 0;
   }
-  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: PersistVibOnBTLoss = %s",PersistBTLoss );
+  
+  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: PersistVibOnBTLoss = %d",PersistBTLoss );
   
   //Persistent Value Date Format
   if (persist_exists(DATE_FORMAT_KEY)) {
-     persist_read_string(DATE_FORMAT_KEY, date_type, sizeof(date_type));
+      PersistDateFormat = persist_read_int(DATE_FORMAT_KEY); 
+      APP_LOG(APP_LOG_LEVEL_WARNING, "   PersistDateFormat Key %d found", PersistDateFormat);
   }  else {
-     strcpy(date_type, "us");
+       PersistDateFormat = 1; //US DEFAULT
+       APP_LOG(APP_LOG_LEVEL_WARNING, "   PersistDateFormat set to US Default 0"); 
   }
 
-  if (strcmp(date_type, "us") == 0) {
+  if (PersistDateFormat == 1) {
       strcpy(date_format, "%a %m/%d/%y");
   } else {
       strcpy(date_format, "%a %d/%m/%y");
   }
-  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: DateFormatKey = %s", date_type);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: DateFormatKey = %d", PersistDateFormat);
  
 //Persistent Value Low Battery
   if(persist_exists(LOW_BATTERY_KEY)) {
-     persist_read_string(LOW_BATTERY_KEY, PersistLow_Batt , sizeof(PersistLow_Batt ));
+     PersistLow_Batt = persist_read_int(LOW_BATTERY_KEY);
   }  else {
-     strcpy(PersistLow_Batt , "0"); // Default
+     PersistLow_Batt = 0; // Default
   }
   
-  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: Persist Low_Batt = %s", PersistLow_Batt);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: Persist Low_Batt = %d", PersistLow_Batt);
   
   //Persistent UTC Offset
   if(persist_exists(UTC_OFFSET_KEY)) {
      persist_read_string(UTC_OFFSET_KEY, PersistUTCOffset  , sizeof(PersistUTCOffset  ));
   }  else {
-     strcpy(PersistLow_Batt , "+00:00"); // Default
+     strcpy(PersistUTCOffset , "+00:00"); // Default
   }
   
   APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: UTC Offset = %s", PersistUTCOffset);
@@ -1089,7 +1069,7 @@ void handle_init(void) {
   if(persist_exists(LOCATION_NAME_KEY )) {
      persist_read_string(LOCATION_NAME_KEY , PersistLocationName   , sizeof(PersistLocationName   ));
   }  else {
-     strcpy(PersistLocationName , "Name N/A"); // Default
+     strcpy(PersistLocationName , "UTC/GMT"); // Default
   }
   
   APP_LOG(APP_LOG_LEVEL_WARNING, "In Init: Persist Location Name = %s", PersistLocationName );
