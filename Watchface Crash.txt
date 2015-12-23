@@ -1,0 +1,38 @@
+ERROR] DualTZ.c:819: Enterng INIT************************************************************
+[ERROR] DualTZ.c:820: *************************************************************************
+[INFO] essage_outbox.c:50: app_message_open() called with app_message_outbox_size_maximum().
+[INFO] essage_outbox.c:53: This consumes 8200 bytes of heap memory, potentially more in the future!
+[INFO] message_inbox.c:13: app_message_open() called with app_message_inbox_size_maximum().
+[INFO] message_inbox.c:16: This consumes 8200 bytes of heap memory, potentially more in the future!
+[PHONE] pebble-app.js:?: JS: starting app: 41C5FA52-387E-4F67-86A8-142A169C7A0C DualTz
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Ready msg rcvd: Phone-Watch Communication Established, GPS find initiated
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Lat = 21.87855597587477 Long = -159.46978027015874
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Response Text: {"coord":{"lon":-159.46,"lat":21.9},"weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04n"}],"base":"cmc stations","main":{"temp":299.76,"pressure":1017,"humidity":74,"temp_min":299.15,"temp_max":300.15},"wind":{"speed":7.2,"deg":70},"clouds":{"all":75},"dt":1450834320,"sys":{"type":1,"id":833,"message":0.0024,"country":"US","sunrise":1450890784,"sunset":1450929660},"id":5849616,"name":"Koloa","cod":200}
+
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Temperature C is 27
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: City is Koloa
+[WARNING] DualTZ.c:513: In Inbox received callback*****************************************
+
+[ERROR] ault_handling.c:77: App fault! {41c5fa52-387e-4f67-86a8-142a169c7a0c} PC: 0x808f1d6 LR: 0x808f173
+[ERROR] DualTZ.c:819: Enterng INIT************************************************************
+[ERROR] DualTZ.c:820: *************************************************************************
+[INFO] essage_outbox.c:50: app_message_open() called with app_message_outbox_size_maximum().
+[INFO] essage_outbox.c:53: This consumes 8200 bytes of heap memory, potentially more in the future!
+[INFO] message_inbox.c:13: app_message_open() called with app_message_inbox_size_maximum().
+[INFO] message_inbox.c:16: This consumes 8200 bytes of heap memory, potentially more in the future!
+[PHONE] pebble-app.js:?: JS: stopping app: 41C5FA52-387E-4F67-86A8-142A169C7A0C DualTz
+[PHONE] pebble-app.js:?: JS: starting app: 41C5FA52-387E-4F67-86A8-142A169C7A0C DualTz
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Ready msg rcvd: Phone-Watch Communication Established, GPS find initiated
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Lat = 21.87855597587477 Long = -159.46978027015874
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Response Text: {"coord":{"lon":-159.46,"lat":21.9},"weather":[{"id":803,"main":"Clouds","description":"broken clouds","icon":"04n"}],"base":"cmc stations","main":{"temp":299.76,"pressure":1017,"humidity":74,"temp_min":299.15,"temp_max":300.15},"wind":{"speed":7.2,"deg":70},"clouds":{"all":75},"dt":1450834320,"sys":{"type":1,"id":833,"message":0.0024,"country":"US","sunrise":1450890784,"sunset":1450929660},"id":5849616,"name":"Koloa","cod":200}
+
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: Temperature C is 27
+[PHONE] pebble-app.js:?: JS: Dual Time Zone: City is Koloa
+[WARNING] DualTZ.c:513: In Inbox received callback*****************************************
+
+[ERROR] ault_handling.c:77: App fault! {41c5fa52-387e-4f67-86a8-142a169c7a0c} PC: 0x808f1d6 LR: 0x808f173
+Looking up debug information...
+Crashed inside firmware call.
+Looking up debug information...
+Crashed inside firmware call.
+[PHONE] pebble-app.js:?: JS: stopping app: 41C5FA52-387E-4F67-86A8-142A169C7A0C DualTz
