@@ -2,7 +2,7 @@ var myAPIKey = "ebe0a78125281118a038b2a62aab07c8";
 
 Pebble.addEventListener('showConfiguration', function(e) {
     // Show config page
-    console.log("addEventListener: showConfiguratonPage\n");
+    console.log("addEventListener: showConfigurationPage\n");
     Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00.htm');
 });
 
