@@ -1,7 +1,4 @@
 #include "pebble.h"
-//#include <inttypes.h>
-//#include <ctype.h>
-
 
 #define LOCAL_BG_COLOR_KEY      0
 #define TZ2_BG_COLOR_KEY        1
@@ -513,7 +510,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "In Inbox received callback*****************************************\n");
   
          Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
-  
+         APP_LOG(APP_LOG_LEVEL_ERROR, "After Tuple command");
          if(strncmp(Local_BG_Color->value->cstring, "0x", 2) == 0) { // valid config value
             strcpy(PersistLocalBG,Local_BG_Color->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Local BG Color: %s", PersistLocalBG); 
@@ -849,8 +846,9 @@ void handle_init(void) {
   app_message_register_outbox_sent(outbox_sent_callback);
 
   // Open AppMessage
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
- 
+  //app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open(256, 256);
+
   //Local Time Layer
   text_local_layer = text_layer_create(GRect(1, 1, 144, 92)); 
   text_layer_set_background_color(text_local_layer, BGCOLOR1);
