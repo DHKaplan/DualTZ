@@ -63,7 +63,7 @@ static char HexIn[]             = "A";
 static char DoubleHexIn[]       = "AA";
 static char hexColorHold[]      = "0xFF0000";
 
-static char PersistLocalBG[]    = "0xAAAAAA";
+static char PersistLocalBG[]    = "0x0000FF";
 static char PersistTZ2BG[]      = "0xFFFFFF";
 static char PersistLocalText[]  = "0xFFFFFF";
 static char PersistTZ2Text[]    = "0xFFFFFF";
@@ -502,28 +502,29 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
 //<============================================================================================
 //Receive Input from Config html page and location/temp:
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-    char UTCTempHold[] = ":";   
+   char UTCTempHold[] = ":";   
+  
     FirstTime = 0;  //Reset so changes will update immediately
     
   //****************
   
     APP_LOG(APP_LOG_LEVEL_WARNING, "In Inbox received callback*****************************************\n");
   
-         Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
-         APP_LOG(APP_LOG_LEVEL_ERROR, "After Tuple command");
-         if(strncmp(Local_BG_Color->value->cstring, "0x", 2) == 0) { // valid config value
-            strcpy(PersistLocalBG,Local_BG_Color->value->cstring);
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Local BG Color: %s", PersistLocalBG); 
-         } else { //Check for Persist
-            if(persist_exists(LOCAL_BG_COLOR_KEY)) {
-               persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
-               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant Local BG Color = %s", PersistLocalBG);
-            } else {
-               strcpy(PersistLocalBG, "0x0000FF"); // Set Default
-               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Local BG Color %s", PersistLocalBG);
+       Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
+    
+         if((Local_BG_Color) && (strncmp(Local_BG_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
+               strcpy(PersistLocalBG,Local_BG_Color->value->cstring);
+               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Local BG Color: %s", PersistLocalBG);   
+            } else { //Check for Persist
+               if(persist_exists(LOCAL_BG_COLOR_KEY)) {
+                 persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
+                 APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant Local BG Color = %s", PersistLocalBG);
+               }  else {
+                 strcpy(PersistLocalBG, "0x0000FF"); // Set Default
+                 APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Local BG Color %s", PersistLocalBG);
+               }
             }
-
-         }
+         
          persist_write_string(LOCAL_BG_COLOR_KEY,   PersistLocalBG);
           
          strcpy(hexColorHold, PersistLocalBG);
@@ -535,12 +536,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          text_layer_set_background_color(text_degrees_layer,  ColorHold);
          text_layer_set_background_color(text_date_layer,     ColorHold);
          text_layer_set_background_color(text_time_layer,     ColorHold);
- 
-  //****************
+ //****************
 
          Tuple *TZ2_BG_Color =  dict_find(iterator, TZ2_BG_COLOR_KEY);
-  
-         if(strncmp(TZ2_BG_Color->value->cstring, "0x", 2) == 0) { // valid value
+         
+         if((TZ2_BG_Color) && (strncmp(TZ2_BG_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
             strcpy(PersistTZ2BG,TZ2_BG_Color->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value TZ2 BG Color: %s", hexColorHold); 
          } else { //Check for Persist
@@ -569,8 +569,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   //****************
 
          Tuple *Local_Text_Color = dict_find(iterator, LOCAL_TEXT_COLOR_KEY); 
-  
-         if(strncmp(Local_Text_Color->value->cstring, "0x", 2) == 0) { // valid value
+         if((Local_Text_Color) && (strncmp(Local_Text_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
             strcpy(PersistLocalText,Local_Text_Color->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value Local Text Color: %s", PersistLocalText); 
          } else { //Check for Persist
@@ -598,8 +597,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   //****************
 
          Tuple *TZ2_Text_Color = dict_find(iterator, TZ2_TEXT_COLOR_KEY);
-  
-         if(strncmp(TZ2_Text_Color->value->cstring, "0x", 2) == 0) { // valid value
+         
+         if((TZ2_Text_Color) && (strncmp(TZ2_Text_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
             strcpy(PersistTZ2Text,TZ2_Text_Color->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value TZ2 Text Color: %s", PersistTZ2Text); 
          } else {
@@ -629,7 +628,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   //****************
         Tuple *Date_Format = dict_find(iterator, DATE_FORMAT_KEY);
         
-        if((Date_Format->value->uint8 == 0) || (Date_Format->value->uint8 == 1)){
+        if((Date_Format) && ((Date_Format->value->uint8 == 0) || (Date_Format->value->uint8 == 1))) {
             PersistDateFormat = Date_Format->value->uint8;
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value Date Format = %d, 1=US, 0=Intl", PersistDateFormat);
          } else {
@@ -655,9 +654,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
         Tuple *BT_LossVib = dict_find(iterator, BT_LOSS_KEY); 
   
-       if((BT_LossVib->value->uint8 == 0) || (BT_LossVib->value->uint8 == 1)){  
-         PersistBTLoss = BT_LossVib->value->uint8; //Vibe on loss
-          APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config BT Loss Key = %d (0=No Vib, 1=Vib)", PersistBTLoss);
+       if((BT_LossVib) && ((BT_LossVib->value->uint8 == 0) || (BT_LossVib->value->uint8 == 1))) {  
+           PersistBTLoss = BT_LossVib->value->uint8; //Vibe on loss
+           APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config BT Loss Key = %d (0=No Vib, 1=Vib)", PersistBTLoss);
        } else {
          if(persist_exists(BT_LOSS_KEY)) {
                PersistBTLoss = persist_read_int(BT_LOSS_KEY);
@@ -672,20 +671,25 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
  //******************
         Tuple *Low_Battery_Vib = dict_find(iterator, LOW_BATTERY_KEY);
       
-         PersistLow_Batt = Low_Battery_Vib->value->uint8;
+        if(PersistLow_Batt) { 
+           PersistLow_Batt = Low_Battery_Vib->value->uint8;
         
-        switch(PersistLow_Batt) {
+           switch(PersistLow_Batt) {
        
-        case 0:   
+           case 0:   
               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Low Battery Key = 0, No Vibration");
               break;
            
-        case 1:
+           case 1:
               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Low Battery Key = 1, Vibration"); 
               break;
       
-        default:
-              if(persist_exists(LOW_BATTERY_KEY)) {
+           default:
+             PersistLow_Batt = 0; // No Vib on Low Batt
+             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Low Battery Key = %d (No Vibrate on Loss)", PersistBTLoss);
+           }
+        } else {      
+             if(persist_exists(LOW_BATTERY_KEY)) {
                  PersistLow_Batt = persist_read_int(LOW_BATTERY_KEY);
                  APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant Low Battery = %d, (0 = No Vib, 1 = Vib)", PersistBTLoss);
             } else {
@@ -698,23 +702,26 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         
   //******************
         Tuple *UTC_Offset = dict_find(iterator, UTC_OFFSET_KEY);
-      
-        strcpy(UTCOffsetConfig, UTC_Offset->value->cstring);
-        memmove(UTCTempHold, &UTCOffsetConfig[3], 1);
-        APP_LOG(APP_LOG_LEVEL_WARNING,    "    UTC Test Char = %s", UTCTempHold);
-  
-        if(strcmp(UTCTempHold, ":") == 0) {
-           strcpy(PersistUTCOffset, UTCOffsetConfig); 
-           APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config UTC Offset = %s", PersistUTCOffset);
-        } else { 
-           if(persist_exists(UTC_OFFSET_KEY)) {
-               persist_read_string(UTC_OFFSET_KEY, PersistUTCOffset, sizeof(PersistUTCOffset));
-               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant UTC Offset = %s", PersistUTCOffset);
-            } else {
+              
+        if(UTC_Offset) {  // config value exists
+           strcpy(UTCOffsetConfig, UTC_Offset->value->cstring);
+           memmove(UTCTempHold, &UTCOffsetConfig[3], 1);
+           APP_LOG(APP_LOG_LEVEL_WARNING,    "    UTC Test Char = %s", UTCTempHold);  
+          
+           if(strcmp(UTCTempHold, ":") == 0) {
+              strcpy(PersistUTCOffset, UTCOffsetConfig); 
+              APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config UTC Offset = %s", PersistUTCOffset);
+           } else { 
+              if(persist_exists(UTC_OFFSET_KEY)) {
+                 persist_read_string(UTC_OFFSET_KEY, PersistUTCOffset, sizeof(PersistUTCOffset));
+                 APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant UTC Offset = %s", PersistUTCOffset);
+              } else {
                strcpy(PersistUTCOffset, "+00:00"); // Default to UTC
                APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Persistant UTC Offset = %s", PersistUTCOffset);
-            }
+              }
+           }  
         } 
+          
         persist_write_string(UTC_OFFSET_KEY, PersistUTCOffset);
 
   //******************
