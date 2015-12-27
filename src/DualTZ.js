@@ -1,9 +1,17 @@
 var myAPIKey = "ebe0a78125281118a038b2a62aab07c8";
 
 Pebble.addEventListener('showConfiguration', function(e) {
-    // Show config page
-    console.log("addEventListener: showConfigurationPage\n");
-    Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00.htm');
+     var colorCapable = ((typeof Pebble.getActiveWatchInfo === "function") && Pebble.getActiveWatchInfo().platform!='aplite');
+     
+     if(colorCapable == true) {
+       
+        // Show config page
+        console.log("addEventListener: showConfigurationPage Color\n");
+        Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00.htm');
+     } else {
+        console.log("addEventListener: showConfigurationPage Aplite\n");
+        Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00Aplite.htm');
+     }
 });
 
 Pebble.addEventListener('webviewclosed',
@@ -24,6 +32,7 @@ Pebble.addEventListener('webviewclosed',
     });
 
 //********************************************************************
+
 var xhrRequest = function(url, type, callback) {
     var xhr = new XMLHttpRequest();
     xhr.onload = function() {

@@ -28,6 +28,7 @@ Layer     *BatteryLineLayer;
 Layer     *BTLayer;
 
 GFont     fontMonaco13;
+GFont     fontRobotoBoldSubset30;
 GFont     fontRobotoBoldSubset35;
 
 GPoint     Linepoint;
@@ -52,10 +53,10 @@ static char UTCOffsetConfig[]   = "+00:00";
 static char strSign[]           = "+";
 static char time_text[]         = "00:00am";
 static char time2_text[]        = "00:00x";
-static char date_text[]         = "Mon 05/01/15";
-static char date2_text[]        = "Mon 05/01/15";
+static char date_text[]         = "  Dec 26, 2015";
+static char date2_text[]        = "  Dec 26, 2015";
 static char seconds_text[]      = "00";
-static char date_format[]       = "%a %m/%d/%y";
+static char date_format[]       = "  %a %m/%d/%y";
 static char text_location[18];
 static char text_location2[18];
 static char text_degrees[]      = "====";
@@ -71,7 +72,7 @@ static int  PersistDateFormat   = 0;
 static int  PersistBTLoss       = 0;
 static int  PersistLow_Batt     = 0;
 static char PersistUTCOffset[]  = "+00:00";
-static char PersistLocationName[18];
+static char PersistLocationName[19];
 
 GColor TextColorHold1;
 GColor TextColorHold2;
@@ -105,21 +106,46 @@ void handle_battery(BatteryChargeState charge_state) {
 
 void battery_line_layer_update_callback(Layer *BatteryLineLayer, GContext* batctx) { 
      graphics_context_set_fill_color(batctx, GColorWhite);
+  
      graphics_fill_rect(batctx, layer_get_bounds(BatteryLineLayer), 3, GCornersAll);
 
      if (batterycharging == 1) {
-          graphics_context_set_fill_color(batctx, GColorBlue);
+          #ifdef PBL_PLATFORM_APLITE
+             graphics_context_set_fill_color(batctx, GColorBlack);
+          #else
+             graphics_context_set_fill_color(batctx, GColorBlue);
+          #endif
+       
           graphics_fill_rect(batctx, GRect(2, 1, 100, 4), 3, GCornersAll);
      } else if (batterychargepct > 20) {
-          graphics_context_set_fill_color(batctx, GColorGreen);
+          #ifdef PBL_PLATFORM_APLITE
+             graphics_context_set_fill_color(batctx, GColorBlack);
+          #else
+             graphics_context_set_fill_color(batctx, GColorGreen);
+          #endif 
+       
           graphics_fill_rect(batctx, GRect(2, 1, batterychargepct, 4), 3, GCornersAll);
      } else {   // Battery 20% or less 
-          graphics_context_set_fill_color(batctx, GColorRed);
+          #ifdef PBL_PLATFORM_APLITE
+             graphics_context_set_fill_color(batctx, GColorDarkGray);
+          #else
+             graphics_context_set_fill_color(batctx, GColorRed);
+          #endif
+       
           graphics_fill_rect(batctx, GRect(2, 1, batterychargepct, 4),3, GCornersAll);
      }
   
   //Battery % Markers
-      graphics_context_set_fill_color(batctx, GColorBlack);
+      #ifdef PBL_PLATFORM_APLITE
+         if(batterycharging == 1) {
+            graphics_context_set_fill_color(batctx, GColorBlack);
+         } else {
+            graphics_context_set_fill_color(batctx, GColorWhite);
+         }
+      #else
+         graphics_context_set_fill_color(batctx, GColorBlack);
+      #endif
+  
       graphics_fill_rect(batctx, GRect(89, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(79, 1, 3, 4), 3, GCornerNone);
       graphics_fill_rect(batctx, GRect(69, 1, 3, 4), 3, GCornerNone);
@@ -473,6 +499,7 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     
      strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);
      
+     
      text_layer_set_text(text_date_layer,  date_text);
      text_layer_set_text(text_date2_layer, date2_text);
    
@@ -642,12 +669,20 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          }
           persist_write_int(DATE_FORMAT_KEY, PersistDateFormat);
 
-         if (PersistDateFormat == 1) { // US
-             strcpy(date_format, "%b %e, %Y");
-         } else {
-             strcpy(date_format, "%e %b %Y");   //Intl
-         }
-         
+         #ifdef PBL_PLATFORM_CHALK
+             if (PersistDateFormat == 1) { // US
+                 strcpy(date_format, "  %b %e, %Y");
+             } else {
+                 strcpy(date_format, "  %e %b %Y");   //Intl
+             }
+         #else
+             if (PersistDateFormat == 1) { // US
+                 strcpy(date_format, "%b %e, %Y");
+             } else {
+                 strcpy(date_format, "%e %b %Y");   //Intl
+             }     
+         #endif
+  
         text_layer_set_text(text_date_layer, date_text);
 
   //****************
@@ -743,7 +778,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          text_layer_set_text(text_location2_layer, PersistLocationName);
          
          persist_write_string(LOCATION_NAME_KEY,   PersistLocationName);
-
+         
         //******************
 
         if(WxLocationCall == 1) {
@@ -814,6 +849,7 @@ void handle_deinit(void) {
   layer_destroy(BTLayer);
 
   fonts_unload_custom_font(fontMonaco13);
+  fonts_unload_custom_font(fontRobotoBoldSubset30);
   fonts_unload_custom_font(fontRobotoBoldSubset35);
 
   window_destroy(window);
@@ -826,20 +862,32 @@ void handle_init(void) {
   FirstTime = 0;
   WxLocationCall = 1;
   
-  GColor BGCOLOR1 = GColorDukeBlue;
+ #ifdef PBL_PLATFORM_APLITE 
+     GColor BGCOLOR1 = GColorBlack;
   
-  GColor BGCOLOR2 = GColorDarkGreen;
-  BGColorHold2 = GColorDarkGreen;
+     GColor BGCOLOR2 = GColorDarkGray;
+     BGColorHold2    = GColorDarkGray;
 
-  GColor TEXTCOLOR = GColorWhite;
-  TextColorHold1   = GColorWhite;
-  TextColorHold2   = GColorWhite;
+     GColor TEXTCOLOR = GColorWhite;
+     TextColorHold1   = GColorWhite;
+     TextColorHold2   = GColorWhite;
+  #else
+     GColor BGCOLOR1 = GColorBlue;
+  
+     GColor BGCOLOR2 = GColorDarkGreen;
+     BGColorHold2 = GColorDarkGreen;
+
+     GColor TEXTCOLOR = GColorWhite;
+     TextColorHold1   = GColorWhite;
+     TextColorHold2   = GColorWhite;
+ #endif
   
   window = window_create();
   window_stack_push(window, true /* Animated */);
   window_set_background_color(window, BGCOLOR1);
 
   fontMonaco13           = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MONACO_13));
+  fontRobotoBoldSubset30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_30));
   fontRobotoBoldSubset35 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_35));
   
   Layer *window_layer = window_get_root_layer(window);
@@ -853,21 +901,35 @@ void handle_init(void) {
   app_message_register_outbox_sent(outbox_sent_callback);
 
   // Open AppMessage
-  //app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   app_message_open(256, 256);
 
   //Local Time Layer
-  text_local_layer = text_layer_create(GRect(1, 1, 144, 92)); 
+  #ifdef PBL_PLATFORM_CHALK
+    text_local_layer = text_layer_create(GRect(1, 1, 180, 80)); 
+  #else
+    text_local_layer = text_layer_create(GRect(1, 1, 144, 92)); 
+  #endif 
+  
   text_layer_set_background_color(text_local_layer, BGCOLOR1);
   layer_add_child(window_layer, text_layer_get_layer(text_local_layer));
   
   //TZ2 Layer
-  text_TZ2_layer = text_layer_create(GRect(1, 127, 144, 41)); 
+  #ifdef PBL_PLATFORM_CHALK
+    text_TZ2_layer = text_layer_create(GRect(1, 127, 180, 53)); 
+  #else
+    text_TZ2_layer = text_layer_create(GRect(1, 127, 144, 41));   
+  #endif
+ 
   text_layer_set_background_color(text_TZ2_layer, BGCOLOR2);
   layer_add_child(window_layer, text_layer_get_layer(text_TZ2_layer));
 
   //Location 1 - Local
-  text_location_layer = text_layer_create(GRect(1, 1, 144, 17)); 
+  #ifdef PBL_PLATFORM_CHALK
+    text_location_layer = text_layer_create(GRect(1, 44, 180, 17)); 
+  #else
+    text_location_layer = text_layer_create(GRect(1, 1, 144, 17)); 
+  #endif
+  
   text_layer_set_text_alignment(text_location_layer, GTextAlignmentCenter);		
   text_layer_set_text(text_location_layer, text_location); 
   text_layer_set_font(text_location_layer, fontMonaco13);
@@ -875,8 +937,27 @@ void handle_init(void) {
   text_layer_set_text_color(text_location_layer, TEXTCOLOR);
   layer_add_child(window_layer, text_layer_get_layer(text_location_layer));
   
+  // Date 1
+  #ifdef PBL_PLATFORM_CHALK
+    text_date_layer = text_layer_create(GRect(1, 57, 180, 22));
+    text_layer_set_text_alignment(text_date_layer, GTextAlignmentLeft);;
+  #else
+    text_date_layer = text_layer_create(GRect(1, 18, 144, 22));
+    text_layer_set_text_alignment(text_date_layer, GTextAlignmentCenter);; 
+  #endif
+  
+  text_layer_set_text_color(text_date_layer, TEXTCOLOR);
+  text_layer_set_background_color(text_date_layer, BGCOLOR1);
+  text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
+  layer_add_child(window_layer, text_layer_get_layer(text_date_layer));
+
   //Temperature
-  text_degrees_layer = text_layer_create(GRect(104, 55, 40, 17)); 
+  #ifdef PBL_PLATFORM_CHALK
+     text_degrees_layer = text_layer_create(GRect(130, 65, 40, 17)); 
+  #else
+     text_degrees_layer = text_layer_create(GRect(104, 55, 40, 17));
+  #endif
+ 
   text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		
   text_layer_set_text(text_degrees_layer, text_degrees); 
   text_layer_set_font(text_degrees_layer, fontMonaco13);
@@ -884,24 +965,67 @@ void handle_init(void) {
   text_layer_set_text_color(text_degrees_layer, TEXTCOLOR);
   layer_add_child(window_layer, text_layer_get_layer(text_degrees_layer));
   
-  // Date 1
-  text_date_layer = text_layer_create(GRect(1, 18, 144, 22));
-  text_layer_set_text_color(text_date_layer, TEXTCOLOR);
-  text_layer_set_background_color(text_date_layer, BGCOLOR1);
-  text_layer_set_text_alignment(text_date_layer, GTextAlignmentCenter);;
-  text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
-  layer_add_child(window_layer, text_layer_get_layer(text_date_layer));
-
+  
   // Time of Day 1
-  text_time_layer = text_layer_create(GRect(1, 40, 104, 40)); // was (1, 40, 144, 40));
-  text_layer_set_font(text_time_layer,fontRobotoBoldSubset35);
+  #ifdef PBL_PLATFORM_CHALK
+     text_time_layer = text_layer_create(GRect(1, 6, 180, 40)); // 
+     text_layer_set_font(text_time_layer, fontRobotoBoldSubset30);
+  #else
+     text_time_layer = text_layer_create(GRect(1, 40, 104, 40)); 
+     text_layer_set_font(text_time_layer, fontRobotoBoldSubset35);
+  #endif
+  
   text_layer_set_text_color(text_time_layer, TEXTCOLOR);
   text_layer_set_background_color(text_time_layer, BGCOLOR1);
   text_layer_set_text_alignment(text_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
   
-   //Location 2
-  text_location2_layer = text_layer_create(GRect(1, 92, 144, 19)); 
+   // Battery Line
+  #ifdef PBL_PLATFORM_CHALK
+      GRect battery_line_frame = GRect(38, 84, 104, 6);
+  #else
+      GRect battery_line_frame = GRect(22, 84, 104, 6);
+  #endif
+  
+  BatteryLineLayer = layer_create(battery_line_frame);
+  layer_set_update_proc(BatteryLineLayer, battery_line_layer_update_callback);
+  layer_add_child(window_layer, BatteryLineLayer);
+  
+  // Date 2
+  #ifdef PBL_PLATFORM_CHALK
+     text_date2_layer = text_layer_create(GRect(1, 94, 180, 29));
+     text_layer_set_text_alignment(text_date2_layer, GTextAlignmentLeft);;
+  #else
+     text_date2_layer = text_layer_create(GRect(1, 106, 144, 22));
+     text_layer_set_text_alignment(text_date2_layer, GTextAlignmentCenter);;
+  #endif
+  
+  text_layer_set_text_color(text_date2_layer, TEXTCOLOR);
+  text_layer_set_background_color(text_date2_layer, BGCOLOR2);
+  text_layer_set_font(text_date2_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
+  layer_add_child(window_layer, text_layer_get_layer(text_date2_layer));
+
+  // Time 2
+  #ifdef PBL_PLATFORM_CHALK
+     text_time2_layer = text_layer_create(GRect(1, 135, 180, 40));
+     text_layer_set_font(text_time2_layer,fontRobotoBoldSubset30);
+  #else
+    text_time2_layer = text_layer_create(GRect(1, 127, 104, 40));
+    text_layer_set_font(text_time2_layer,fontRobotoBoldSubset35);
+  #endif
+  
+  text_layer_set_text_color(text_time2_layer, TEXTCOLOR);
+  text_layer_set_background_color(text_time2_layer, BGCOLOR2);
+  text_layer_set_text_alignment(text_time2_layer, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(text_time2_layer)); 
+
+  //Location 2
+  #ifdef PBL_PLATFORM_CHALK
+      text_location2_layer = text_layer_create(GRect(1, 123, 180, 19)); 
+  #else
+      text_location2_layer = text_layer_create(GRect(1, 92, 144, 19));     
+  #endif
+  
   text_layer_set_text_alignment(text_location2_layer, GTextAlignmentCenter);		
   text_layer_set_text(text_location2_layer, text_location2); 
   text_layer_set_font(text_location2_layer, fontMonaco13);
@@ -909,30 +1033,13 @@ void handle_init(void) {
   text_layer_set_text_color(text_location2_layer, TEXTCOLOR);
   layer_add_child(window_layer, text_layer_get_layer(text_location2_layer));
   
-   // Battery Line
-  GRect battery_line_frame = GRect(22, 84, 104, 6);
-  BatteryLineLayer = layer_create(battery_line_frame);
-  layer_set_update_proc(BatteryLineLayer, battery_line_layer_update_callback);
-  layer_add_child(window_layer, BatteryLineLayer);
-  
-  // Date 2
-  text_date2_layer = text_layer_create(GRect(1, 106, 144, 22));
-  text_layer_set_text_color(text_date2_layer, TEXTCOLOR);
-  text_layer_set_background_color(text_date2_layer, BGCOLOR2);
-  text_layer_set_text_alignment(text_date2_layer, GTextAlignmentCenter);;
-  text_layer_set_font(text_date2_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
-  layer_add_child(window_layer, text_layer_get_layer(text_date2_layer));
-
-  // Time 2
-  text_time2_layer = text_layer_create(GRect(1, 127, 104, 40));
-  text_layer_set_font(text_time2_layer,fontRobotoBoldSubset35);
-  text_layer_set_text_color(text_time2_layer, TEXTCOLOR);
-  text_layer_set_background_color(text_time2_layer, BGCOLOR2);
-  text_layer_set_text_alignment(text_time2_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(text_time2_layer)); 
-
   //Bluetooth Logo Setup area
-  GRect BTArea = GRect(110, 140, 20, 20);
+  #ifdef PBL_PLATFORM_CHALK
+     GRect BTArea = GRect(135, 96, 20, 20);
+  #else
+     GRect BTArea = GRect(110, 138, 20, 20);
+  #endif
+  
   BTLayer = layer_create(BTArea);
 
   layer_add_child(window_layer, BTLayer);

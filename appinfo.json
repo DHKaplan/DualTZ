@@ -28,21 +28,25 @@
             {
                 "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
-                "name": "FONT_ROBOTO_BOLD_SUBSET_40",
+                "name": "FONT_ROBOTO_BOLD_SUBSET_35",
+                "targetPlatforms": null,
                 "type": "font"
             },
             {
                 "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
-                "name": "FONT_ROBOTO_BOLD_SUBSET_35",
+                "name": "FONT_ROBOTO_BOLD_SUBSET_30",
+                "targetPlatforms": null,
                 "type": "font"
             }
         ]
     },
     "sdkVersion": "3",
-    "shortName": "DualTz",
+    "shortName": "DualTZ",
     "targetPlatforms": [
-        "basalt"
+        "aplite",
+        "basalt",
+        "chalk"
     ],
     "uuid": "41c5fa52-387e-4f67-86a8-142a169c7a0c",
     "versionLabel": "1.00",
