@@ -11,6 +11,7 @@
 #define LOCATION_NAME_KEY       8
 #define WEATHER_TEMPERATURE_KEY 9
 #define WEATHER_CITY_KEY        10
+#define TEMP_FORMAT_KEY         11
 
 Window *window;
 
@@ -48,6 +49,7 @@ static int  intUTCoffsetmin;
 static int  intRed     = 0;
 static int  intBlue    = 0;
 static int  intGreen   = 0;
+static int  wxcall     = 0;
 
 static char UTCOffsetConfig[]   = "+00:00";
 static char strSign[]           = "+";
@@ -69,6 +71,7 @@ static char PersistTZ2BG[]      = "0xFFFFFF";
 static char PersistLocalText[]  = "0xFFFFFF";
 static char PersistTZ2Text[]    = "0xFFFFFF";
 static int  PersistDateFormat   = 0;
+static int  PersistTempFormat   = 0;
 static int  PersistBTLoss       = 0;
 static int  PersistLow_Batt     = 0;
 static char PersistUTCOffset[]  = "+00:00";
@@ -95,8 +98,8 @@ void handle_battery(BatteryChargeState charge_state) {
      } 
   }
 
-  
-  if ((batterychargepct < 30) && (PersistLow_Batt == 1) &&  (BatteryVibesDone == 0)) {          
+  if ((batterychargepct < 30) && (PersistLow_Batt == 1) &&  (BatteryVibesDone == 0)) {   
+         APP_LOG(APP_LOG_LEVEL_INFO, ". . . . Battery Vibes!");
          BatteryVibesDone = 1;
          vibes_long_pulse();
       }
@@ -175,6 +178,7 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
        GPoint BTLinePointEnd;
       
       if ((BTConnected == 0) && (PersistBTLoss == 1)) {
+              APP_LOG(APP_LOG_LEVEL_INFO, ". . . . Bluetooth Vibes!");
               BTVibesDone = 1;
               vibes_long_pulse();
       }
@@ -508,9 +512,11 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     
   }  // End of First Time or 00 seconds
 
-     // Get weather:  
-  if((tick_time->tm_min % 15 == 0)  && (tick_time->tm_sec == 0)) { // Only update wx/location every 15 minutes
-      APP_LOG(APP_LOG_LEVEL_ERROR, "In 15 minute wx Processing");
+     // =================== Get weather:  
+  // Only update wx/location every 15 minutes or on call....
+  if(((tick_time->tm_min % 15 == 0)  && (tick_time->tm_sec == 0)) || (wxcall == 1)) { 
+
+      APP_LOG(APP_LOG_LEVEL_ERROR, "In 15 minute wx Processing, wxcall = %d", wxcall);
       WxLocationCall = 1;   //minHold, intDoWx
         
       // Begin dictionary
@@ -706,7 +712,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
  //******************
         Tuple *Low_Battery_Vib = dict_find(iterator, LOW_BATTERY_KEY);
       
-        if(PersistLow_Batt) { 
+        if(Low_Battery_Vib) { 
            PersistLow_Batt = Low_Battery_Vib->value->uint8;
         
            switch(PersistLow_Batt) {
@@ -765,7 +771,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          
          if(Location_name) {
             strcpy(PersistLocationName, Location_name->value->cstring);
-            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config TZ2 Location:  %s\n", PersistLocationName);
+            APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config TZ2 Location:  %s", PersistLocationName);
          } else {
             if(persist_exists(LOCATION_NAME_KEY)) {
                persist_read_string(LOCATION_NAME_KEY, PersistLocationName, sizeof(PersistLocationName));
@@ -778,35 +784,67 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          text_layer_set_text(text_location2_layer, PersistLocationName);
          
          persist_write_string(LOCATION_NAME_KEY,   PersistLocationName);
-         
-        //******************
+ //******************
+  
+        if(wxcall == 1) { // reset flag to process wx
+           wxcall = 0;
+        } else {
+           wxcall = 1;
+        } 
+  
+        Tuple *Temp_Type = dict_find(iterator, TEMP_FORMAT_KEY);
+
+       if((Temp_Type) && ((Temp_Type->value->uint8 == 0) || (Temp_Type->value->uint8 == 1))) {  
+             PersistTempFormat = Temp_Type->value->uint8; //Temp Type
+           APP_LOG(APP_LOG_LEVEL_WARNING,     "    Added Config Temp Type = %d, (1 = F. 0 = C)\n", PersistTempFormat);
+       } else {
+         if(persist_exists(TEMP_FORMAT_KEY)) {
+               PersistTempFormat = persist_read_int(TEMP_FORMAT_KEY);
+               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Persistant Temp Type = %d, (1 = F, 0 = C)\n", PersistTempFormat);
+            } else {
+               PersistTempFormat = 1; // Degrees F
+               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Temp Type = %d, (Degrees F)\n", PersistTempFormat);
+            }
+       }
+        persist_write_int(TEMP_FORMAT_KEY, PersistTempFormat);
+  
+  //******************
 
         if(WxLocationCall == 1) {
-            APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Temp...");
+            APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Temp & Location...");
        
             Tuple *Temperature = dict_find(iterator, WEATHER_TEMPERATURE_KEY);
             
             strcpy(text_degrees,(Temperature->value->cstring));
-            if (strcmp((text_degrees), "N/A") != 0) {
+
+        if (strcmp((text_degrees), "N/A") != 0) {
+                APP_LOG(APP_LOG_LEVEL_WARNING,   "    PersistTemp Format = %d, (1 = F, 0 = C)", PersistTempFormat);
+
                 int tempint = 100;
-                APP_LOG(APP_LOG_LEVEL_WARNING, "    Degrees C = %s", text_degrees);
+               
+                APP_LOG(APP_LOG_LEVEL_WARNING,   "    Input Degrees C = %s", text_degrees);
                 tempint = atoi(text_degrees);
+          
+                if(PersistTempFormat == 1){ // Degrees F  
+                   tempint = ((tempint * 9) / 5) + 32;
   
-                tempint = ((tempint * 9) / 5) + 32;
-  
-                // Assemble full string and display
-             snprintf(text_degrees, 5, "%dF ", tempint);       
-           } else {
-                strcpy(text_degrees, "N/A");  
+                   // Assemble full string and display
+                  snprintf(text_degrees, 5, "%dF ", tempint);  
+                  APP_LOG(APP_LOG_LEVEL_WARNING, "    Output Degrees F = %s", text_degrees);
+
+                } else {
+                  snprintf(text_degrees, 5, "%dC ", tempint); //Temp Degrees C
+                }  
            } 
         
            text_layer_set_text(text_degrees_layer, text_degrees); 
-           APP_LOG(APP_LOG_LEVEL_WARNING, "    Degrees F = %s\n", text_degrees);        
+           APP_LOG(APP_LOG_LEVEL_WARNING, "    Temp Output: %s\n", text_degrees);        
        
    //******************
-       APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Wx Location Name...");
-      // if(WxLocationCall == 1) {
+          APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Wx Location Name...");
+         
           Tuple *Wx_City = dict_find(iterator, WEATHER_CITY_KEY);
+         
           strcpy(text_location,Wx_City->value->cstring) ;      
           text_layer_set_text(text_location_layer, text_location);
           WxLocationCall = 0;
@@ -953,9 +991,9 @@ void handle_init(void) {
 
   //Temperature
   #ifdef PBL_PLATFORM_CHALK
-     text_degrees_layer = text_layer_create(GRect(130, 65, 40, 17)); 
+     text_degrees_layer = text_layer_create(GRect(125, 65, 40, 17)); 
   #else
-     text_degrees_layer = text_layer_create(GRect(104, 55, 40, 17));
+     text_degrees_layer = text_layer_create(GRect(99, 55, 40, 17));
   #endif
  
   text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		

@@ -7,10 +7,10 @@ Pebble.addEventListener('showConfiguration', function(e) {
        
         // Show config page
         console.log("addEventListener: showConfigurationPage Color\n");
-        Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00.htm');
+        Pebble.openURL('http://www.wticalumni.com/DHK/Dual-TZ-V1.00.htm');
      } else {
         console.log("addEventListener: showConfigurationPage Aplite\n");
-        Pebble.openURL('http://www.wticalumni.com/DHK/DualTZ-V1.00Aplite.htm');
+        Pebble.openURL('http://www.wticalumni.com/DHK/Dual-TZ-V1.00Aplite.htm');
      }
 });
 
