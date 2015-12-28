@@ -752,6 +752,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
            if(strcmp(UTCTempHold, ":") == 0) {
               strcpy(PersistUTCOffset, UTCOffsetConfig); 
               APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config UTC Offset = %s", PersistUTCOffset);
+           }  
            } else { 
               if(persist_exists(UTC_OFFSET_KEY)) {
                  persist_read_string(UTC_OFFSET_KEY, PersistUTCOffset, sizeof(PersistUTCOffset));
@@ -761,10 +762,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
                APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default Persistant UTC Offset = %s", PersistUTCOffset);
               }
            }  
-        } 
+        
           
         persist_write_string(UTC_OFFSET_KEY, PersistUTCOffset);
-
+        APP_LOG(APP_LOG_LEVEL_INFO, "Writing Persist UTC = %s", PersistUTCOffset);
   //******************
         
          Tuple *Location_name = dict_find(iterator, LOCATION_NAME_KEY);
