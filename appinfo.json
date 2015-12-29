@@ -22,6 +22,13 @@
     "resources": {
         "media": [
             {
+                "file": "images/DualtTZ-menu-icon",
+                "menuIcon": true,
+                "name": "IMAGE_MENU_ICON",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
                 "file": "fonts/monaco.ttf",
                 "name": "FONT_MONACO_13",
                 "type": "font"

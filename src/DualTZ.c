@@ -743,7 +743,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         
   //******************
         Tuple *UTC_Offset = dict_find(iterator, UTC_OFFSET_KEY);
-              
+        APP_LOG(APP_LOG_LEVEL_ERROR, "    In UTC Offset Section");      
         if(UTC_Offset) {  // config value exists
            strcpy(UTCOffsetConfig, UTC_Offset->value->cstring);
            memmove(UTCTempHold, &UTCOffsetConfig[3], 1);
