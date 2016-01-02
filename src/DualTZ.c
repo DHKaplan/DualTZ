@@ -59,9 +59,9 @@ static char date_text[]         = "  Dec 26, 2015";
 static char date2_text[]        = "  Dec 26, 2015";
 static char seconds_text[]      = "00";
 static char date_format[]       = "  %a %m/%d/%y";
-static char text_location[18];
-static char text_location2[18];
-static char text_degrees[]      = "====";
+static char text_location[18]   = "N/A";
+static char text_location2[18]  = "N/A";
+static char text_degrees[]      = "N/A";
 static char HexIn[]             = "A";
 static char DoubleHexIn[]       = "AA";
 static char hexColorHold[]      = "0xFF0000";
@@ -178,7 +178,6 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
        GPoint BTLinePointEnd;
       
       if ((BTConnected == 0) && (PersistBTLoss == 1)) {
-              APP_LOG(APP_LOG_LEVEL_INFO, ". . . . Bluetooth Vibes!");
               BTVibesDone = 1;
               vibes_long_pulse();
       }
@@ -291,12 +290,6 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
        graphics_draw_line(BT1ctx, BTLinePointStart, BTLinePointEnd);   
       }            
 }    
-
-void handle_appfocus(bool in_focus){
-    if (in_focus) {
-        FirstTime = 0;
-    }
-}
 
 int ConvertSingleHextoDecimal() {
   int intChar = 0;
@@ -453,7 +446,91 @@ void ProcessTimeZone() {
     intUTCAdjust = (intUTCoffsethrs * 3600) + (intUTCoffsetmin * 60);
   }  
 }
-
+void ProcessNoBTPersist() {
+     if(persist_exists(LOCAL_BG_COLOR_KEY)) {
+        persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
+          
+        strcpy(hexColorHold, PersistLocalBG);
+        ProcessHexColor();
+        
+        text_layer_set_background_color(text_local_layer,    ColorHold);
+        text_layer_set_background_color(text_location_layer, ColorHold);
+        text_layer_set_background_color(text_degrees_layer,  ColorHold);
+        text_layer_set_background_color(text_date_layer,     ColorHold);
+        text_layer_set_background_color(text_time_layer,     ColorHold); 
+     }
+  
+    if(persist_exists(TZ2_BG_COLOR_KEY)) {
+       persist_read_string(TZ2_BG_COLOR_KEY, PersistTZ2BG, sizeof(PersistTZ2BG));
+       
+       strcpy(hexColorHold, PersistTZ2BG);
+       ProcessHexColor();
+        
+       text_layer_set_background_color(text_TZ2_layer,       ColorHold);
+       text_layer_set_background_color(text_location2_layer, ColorHold);
+       text_layer_set_background_color(text_date2_layer,     ColorHold);
+       text_layer_set_background_color(text_time2_layer,     ColorHold);
+          
+    }
+  
+    if(persist_exists(LOCAL_TEXT_COLOR_KEY)) {
+       persist_read_string(LOCAL_TEXT_COLOR_KEY, PersistLocalText, sizeof(PersistLocalText));
+ 
+       strcpy(hexColorHold, PersistLocalText);
+       ProcessHexColor();
+       
+       text_layer_set_text_color(text_local_layer,    ColorHold);
+       text_layer_set_text_color(text_location_layer, ColorHold);
+       text_layer_set_text_color(text_degrees_layer,  ColorHold);
+       text_layer_set_text_color(text_date_layer,     ColorHold);
+       text_layer_set_text_color(text_time_layer,     ColorHold);
+    }
+  
+    if(persist_exists(TZ2_TEXT_COLOR_KEY)) {
+       persist_read_string(TZ2_TEXT_COLOR_KEY, PersistTZ2Text, sizeof(PersistTZ2Text));
+    
+       strcpy(hexColorHold, PersistTZ2Text);    
+       ProcessHexColor();
+  
+       TextColorHold2 = ColorHold; //Save for BT callback
+       text_layer_set_text_color(text_TZ2_layer,       ColorHold);
+       text_layer_set_text_color(text_location2_layer, ColorHold);
+       text_layer_set_text_color(text_date2_layer,     ColorHold);
+       text_layer_set_text_color(text_time2_layer,     ColorHold);
+    }      
+    
+    if(persist_exists(DATE_FORMAT_KEY)) {
+       PersistDateFormat = persist_read_int(DATE_FORMAT_KEY);
+       #ifdef PBL_PLATFORM_CHALK
+          if (PersistDateFormat == 1) { // US
+              strcpy(date_format, "  %b %e, %Y");
+          } else {
+              strcpy(date_format, "  %e %b %Y");   //Intl
+          }
+       #else
+          if (PersistDateFormat == 1) { // US
+              strcpy(date_format, "%b %e, %Y");
+          } else {
+              strcpy(date_format, "%e %b %Y");   //Intl
+          }     
+         #endif
+  
+        text_layer_set_text(text_date_layer, date_text);
+    }
+    
+    if(persist_exists(LOW_BATTERY_KEY)) {
+                 PersistLow_Batt = persist_read_int(LOW_BATTERY_KEY);
+    }
+  
+    if(persist_exists(UTC_OFFSET_KEY)) {
+       persist_read_string(UTC_OFFSET_KEY, PersistUTCOffset, sizeof(PersistUTCOffset));
+    }
+           
+    if(persist_exists(LOCATION_NAME_KEY)) {
+          persist_read_string(LOCATION_NAME_KEY, PersistLocationName, sizeof(PersistLocationName));
+          text_layer_set_text(text_location2_layer, PersistLocationName);     
+       }
+}     
 //************************************************************************************************************
 void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   char time_format[] = "%I:%M";
@@ -466,7 +543,13 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   //******************************************************************
   if((strcmp(seconds_text,"00") == 0) || (FirstTime == 0)) {
      FirstTime = 1;
-       
+      
+    if(BTConnected == 0) {
+        ProcessNoBTPersist();
+    }  
+        
+    
+    
      // Adjust for gmtime 
      ProcessTimeZone(); //convert from character 12:32 to nunmber of seconds to adjust
 
@@ -484,11 +567,11 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
      } else {
         strcpy(time_format,"%I:%M"); //12 hour HH:MM   %p = AM/PM
      }
-
      strftime(time_text, sizeof(time_text),   time_format, tick_time);
 
      strftime(time2_text, sizeof(time2_text), time_format, gmtinfo);
-     
+     APP_LOG(APP_LOG_LEVEL_INFO, "2nd Time is %s", time2_text);
+
      // Kludge to handle lack of non-padded hour format string
      // for twelve hour clock.
      if (!clock_is_24h_style() && (time_text[0] == '0')) {
@@ -516,8 +599,8 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
   // Only update wx/location every 15 minutes or on call....
   if(((tick_time->tm_min % 15 == 0)  && (tick_time->tm_sec == 0)) || (wxcall == 1)) { 
 
-      APP_LOG(APP_LOG_LEVEL_ERROR, "In 15 minute wx Processing, wxcall = %d", wxcall);
-      WxLocationCall = 1;   //minHold, intDoWx
+      APP_LOG(APP_LOG_LEVEL_ERROR, "In 15 minute wx Processing %d:%d or wxcall = %d", tick_time->tm_min, tick_time->tm_sec, wxcall);
+      WxLocationCall = 1; 
         
       // Begin dictionary
       DictionaryIterator *iter;
@@ -540,7 +623,6 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     FirstTime = 0;  //Reset so changes will update immediately
     
   //****************
-  
     APP_LOG(APP_LOG_LEVEL_WARNING, "In Inbox received callback*****************************************\n");
   
        Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
@@ -596,8 +678,6 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          text_layer_set_background_color(text_location2_layer, ColorHold);
          text_layer_set_background_color(text_date2_layer,     ColorHold);
          text_layer_set_background_color(text_time2_layer,     ColorHold);
-
-
   
   //****************
 
@@ -743,7 +823,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         
   //******************
         Tuple *UTC_Offset = dict_find(iterator, UTC_OFFSET_KEY);
-        APP_LOG(APP_LOG_LEVEL_ERROR, "    In UTC Offset Section");      
+
         if(UTC_Offset) {  // config value exists
            strcpy(UTCOffsetConfig, UTC_Offset->value->cstring);
            memmove(UTCTempHold, &UTCOffsetConfig[3], 1);
@@ -765,11 +845,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         
           
         persist_write_string(UTC_OFFSET_KEY, PersistUTCOffset);
-        APP_LOG(APP_LOG_LEVEL_INFO, "Writing Persist UTC = %s", PersistUTCOffset);
+
   //******************
         
          Tuple *Location_name = dict_find(iterator, LOCATION_NAME_KEY);
-         
+        
          if(Location_name) {
             strcpy(PersistLocationName, Location_name->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config TZ2 Location:  %s", PersistLocationName);
@@ -782,9 +862,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
                APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Default TZ2 Location = %s", PersistLocationName);
             }
          }  
+             
          text_layer_set_text(text_location2_layer, PersistLocationName);
          
          persist_write_string(LOCATION_NAME_KEY,   PersistLocationName);
+       
  //******************
   
         if(wxcall == 1) { // reset flag to process wx
@@ -811,7 +893,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   
   //******************
 
-        if(WxLocationCall == 1) {
+        if(WxLocationCall == 1)  { 
             APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Temp & Location...");
        
             Tuple *Temperature = dict_find(iterator, WEATHER_TEMPERATURE_KEY);
@@ -853,9 +935,14 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       
    WxLocationCall = 0;   
  }     
-  
+ 
 }
 
+void handle_appfocus(bool in_focus){
+    if (in_focus) {
+        FirstTime = 0;
+    }
+}
 void inbox_dropped_callback(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Inbox Message dropped!");
 }
