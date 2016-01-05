@@ -14,6 +14,7 @@
         "WEATHER_TEMPERATURE_KEY": 9
     },
     "capabilities": [
+        "location",
         "configurable"
     ],
     "companyName": "WA1OUI",
@@ -29,21 +30,20 @@
                 "type": "bitmap"
             },
             {
-                "file": "fonts/monaco.ttf",
-                "name": "FONT_MONACO_13",
-                "type": "font"
-            },
-            {
-                "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
                 "name": "FONT_ROBOTO_BOLD_SUBSET_35",
                 "targetPlatforms": null,
                 "type": "font"
             },
             {
-                "characterRegex": "[:0-9]",
                 "file": "fonts/Roboto-Bold.ttf",
                 "name": "FONT_ROBOTO_BOLD_SUBSET_30",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "file": "fonts/monaco.ttf",
+                "name": "FONT_MONACO_13",
                 "targetPlatforms": null,
                 "type": "font"
             }

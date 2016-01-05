@@ -30,7 +30,6 @@ Layer     *BTLayer;
 
 GFont     fontMonaco13;
 GFont     fontRobotoBoldSubset30;
-GFont     fontRobotoBoldSubset35;
 
 GPoint     Linepoint;
 
@@ -53,8 +52,8 @@ static int  wxcall     = 0;
 
 static char UTCOffsetConfig[]   = "+00:00";
 static char strSign[]           = "+";
-static char time_text[]         = "00:00am";
-static char time2_text[]        = "00:00x";
+static char time_text[]         = "00:00a ";
+static char time2_text[]        = "00:00a ";
 static char date_text[]         = "  Dec 26, 2015";
 static char date2_text[]        = "  Dec 26, 2015";
 static char seconds_text[]      = "00";
@@ -500,19 +499,19 @@ void ProcessNoBTPersist() {
     }      
     
     if(persist_exists(DATE_FORMAT_KEY)) {
-       PersistDateFormat = persist_read_int(DATE_FORMAT_KEY);
        #ifdef PBL_PLATFORM_CHALK
-          if (PersistDateFormat == 1) { // US
-              strcpy(date_format, "  %b %e, %Y");
-          } else {
-              strcpy(date_format, "  %e %b %Y");   //Intl
-          }
-       #else
-          if (PersistDateFormat == 1) { // US
-              strcpy(date_format, "%b %e, %Y");
-          } else {
-              strcpy(date_format, "%e %b %Y");   //Intl
-          }     
+             if (PersistDateFormat == 1) { // US
+               // strcpy(date_format, "  %b %e, %Y"); Jan 01, 2015
+               strcpy(date_format,   " %a  %D");
+             } else {
+               strcpy(date_format,   " %a  %d/%m/%y");   //Intl
+             }
+         #else
+             if (PersistDateFormat == 1) { // US
+                 strcpy(date_format, "%a   %D");
+             } else {
+                 strcpy(date_format, "%a   %d/%m/%y");   //Intl
+             }     
          #endif
   
         text_layer_set_text(text_date_layer, date_text);
@@ -533,7 +532,8 @@ void ProcessNoBTPersist() {
 }     
 //************************************************************************************************************
 void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
-  char time_format[] = "%I:%M";
+  char time_format[] = "%I:%M%p   ";
+  char time_hold[]   = "09:02A";
   
   time_t seconds_since_epoch;
   seconds_since_epoch = time(NULL);
@@ -547,8 +547,6 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     if(BTConnected == 0) {
         ProcessNoBTPersist();
     }  
-        
-    
     
      // Adjust for gmtime 
      ProcessTimeZone(); //convert from character 12:32 to nunmber of seconds to adjust
@@ -563,30 +561,28 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
      struct tm* gmtinfo = gmtime(&seconds_since_epoch);
  
      if (clock_is_24h_style()) {
-        strcpy(time_format,"%R"); //24 hour HH:MM
+        strcpy(time_format,"%R%"); //24 hour HH:MM
      } else {
-        strcpy(time_format,"%I:%M"); //12 hour HH:MM   %p = AM/PM
+        strcpy(time_format,"%I:%M%P"); //12 hour HH:MM   %p = AM/PM
      }
-     strftime(time_text, sizeof(time_text),   time_format, tick_time);
-
-     strftime(time2_text, sizeof(time2_text), time_format, gmtinfo);
-     APP_LOG(APP_LOG_LEVEL_INFO, "2nd Time is %s", time2_text);
-
-     // Kludge to handle lack of non-padded hour format string
-     // for twelve hour clock.
-     if (!clock_is_24h_style() && (time_text[0] == '0')) {
-         memmove(time_text, &time_text[1], sizeof(time_text) - 1);
-     }
-  
-     if (!clock_is_24h_style() && (time2_text[0] == '0')) {
-        memmove(time2_text, &time2_text[1], sizeof(time2_text) - 1);
-     }
-  
-     strftime(date_text,  sizeof(date_text), date_format, tick_time);
     
-     strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);
-     
-     
+     strftime(time_text, sizeof(time_text), time_format, tick_time);
+
+     if(!clock_is_24h_style()) {
+        strncpy(time_hold, time_text, 6);
+        strcpy(time_text, time_hold);
+     }  
+    
+     strftime(time2_text, sizeof(time2_text), time_format, gmtinfo);
+
+     if (!clock_is_24h_style()) { 
+         strncpy(time_hold, time2_text, 6);
+         strcpy(time2_text, time_hold);
+     }  
+         
+     strftime(date_text,  sizeof(date_text), date_format, tick_time);
+     strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);   
+    
      text_layer_set_text(text_date_layer,  date_text);
      text_layer_set_text(text_date2_layer, date2_text);
    
@@ -625,9 +621,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   //****************
     APP_LOG(APP_LOG_LEVEL_WARNING, "In Inbox received callback*****************************************\n");
   
-       Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
-    
-         if((Local_BG_Color) && (strncmp(Local_BG_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
+          #ifdef PBL_COLOR
+            Tuple *Local_BG_Color = dict_find(iterator, LOCAL_BG_COLOR_KEY);     
+
+            if((Local_BG_Color) && (strncmp(Local_BG_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
                strcpy(PersistLocalBG,Local_BG_Color->value->cstring);
                APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Local BG Color: %s", PersistLocalBG);   
             } else { //Check for Persist
@@ -646,6 +643,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
          ProcessHexColor();
         
+       #else
+         ColorHold = GColorBlack;
+       #endif
+  
          text_layer_set_background_color(text_local_layer,    ColorHold);
          text_layer_set_background_color(text_location_layer, ColorHold);
          text_layer_set_background_color(text_degrees_layer,  ColorHold);
@@ -653,6 +654,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          text_layer_set_background_color(text_time_layer,     ColorHold);
  //****************
 
+      #ifdef PBL_COLOR   
          Tuple *TZ2_BG_Color =  dict_find(iterator, TZ2_BG_COLOR_KEY);
          
          if((TZ2_BG_Color) && (strncmp(TZ2_BG_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
@@ -673,7 +675,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          strcpy(hexColorHold, PersistTZ2BG);
      
          ProcessHexColor();
-        
+       #else
+         ColorHold = GColorWhite;
+       #endif
+  
          text_layer_set_background_color(text_TZ2_layer,       ColorHold);
          text_layer_set_background_color(text_location2_layer, ColorHold);
          text_layer_set_background_color(text_date2_layer,     ColorHold);
@@ -681,7 +686,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   
   //****************
 
+       #ifdef PBL_COLOR
          Tuple *Local_Text_Color = dict_find(iterator, LOCAL_TEXT_COLOR_KEY); 
+        
          if((Local_Text_Color) && (strncmp(Local_Text_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
             strcpy(PersistLocalText,Local_Text_Color->value->cstring);
             APP_LOG(APP_LOG_LEVEL_WARNING, "    Added Config Value Local Text Color: %s", PersistLocalText); 
@@ -700,7 +707,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          strcpy(hexColorHold, PersistLocalText);
          
          ProcessHexColor();
-       
+      #else
+         ColorHold = GColorWhite;
+      #endif
+      
          text_layer_set_text_color(text_local_layer,    ColorHold);
          text_layer_set_text_color(text_location_layer, ColorHold);
          text_layer_set_text_color(text_degrees_layer,  ColorHold);
@@ -709,6 +719,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   
   //****************
 
+      #ifdef PBL_COLOR
          Tuple *TZ2_Text_Color = dict_find(iterator, TZ2_TEXT_COLOR_KEY);
          
          if((TZ2_Text_Color) && (strncmp(TZ2_Text_Color->value->cstring, "0x", 2) == 0)) {  // config value exists & is valid
@@ -729,6 +740,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
          strcpy(hexColorHold, PersistTZ2Text);
          
          ProcessHexColor();
+       #else
+         ColorHold = GColorBlack;
+       #endif
   
          TextColorHold2 = ColorHold; //Save for BT callback
          text_layer_set_text_color(text_TZ2_layer,       ColorHold);
@@ -757,15 +771,16 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
          #ifdef PBL_PLATFORM_CHALK
              if (PersistDateFormat == 1) { // US
-                 strcpy(date_format, "  %b %e, %Y");
+               // strcpy(date_format, "  %b %e, %Y"); Jan 01, 2015
+               strcpy(date_format,   " %a  %D");
              } else {
-                 strcpy(date_format, "  %e %b %Y");   //Intl
+               strcpy(date_format,   " %a  %d/%m/%y");   //Intl
              }
          #else
              if (PersistDateFormat == 1) { // US
-                 strcpy(date_format, "%b %e, %Y");
+                 strcpy(date_format, "%a   %D");
              } else {
-                 strcpy(date_format, "%e %b %Y");   //Intl
+                 strcpy(date_format, "%a   %d/%m/%y");   //Intl
              }     
          #endif
   
@@ -892,7 +907,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
         persist_write_int(TEMP_FORMAT_KEY, PersistTempFormat);
   
   //******************
-
+        int tempint = 100;
+  
         if(WxLocationCall == 1)  { 
             APP_LOG(APP_LOG_LEVEL_WARNING, "Processing Temp & Location...");
        
@@ -902,8 +918,6 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
         if (strcmp((text_degrees), "N/A") != 0) {
                 APP_LOG(APP_LOG_LEVEL_WARNING,   "    PersistTemp Format = %d, (1 = F, 0 = C)", PersistTempFormat);
-
-                int tempint = 100;
                
                 APP_LOG(APP_LOG_LEVEL_WARNING,   "    Input Degrees C = %s", text_degrees);
                 tempint = atoi(text_degrees);
@@ -912,6 +926,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
                    tempint = ((tempint * 9) / 5) + 32;
   
                    // Assemble full string and display
+
                   snprintf(text_degrees, 5, "%dF ", tempint);  
                   APP_LOG(APP_LOG_LEVEL_WARNING, "    Output Degrees F = %s", text_degrees);
 
@@ -976,7 +991,6 @@ void handle_deinit(void) {
 
   fonts_unload_custom_font(fontMonaco13);
   fonts_unload_custom_font(fontRobotoBoldSubset30);
-  fonts_unload_custom_font(fontRobotoBoldSubset35);
 
   window_destroy(window);
 }
@@ -988,22 +1002,24 @@ void handle_init(void) {
   FirstTime = 0;
   WxLocationCall = 1;
   
- #ifdef PBL_PLATFORM_APLITE 
-     GColor BGCOLOR1 = GColorBlack;
+  setlocale(LC_TIME, "");
   
-     GColor BGCOLOR2 = GColorDarkGray;
-     BGColorHold2    = GColorDarkGray;
+ #ifdef PBL_BW
+     GColor BGCOLOR1 = GColorBlack;
+     GColor BGCOLOR2 = GColorWhite;
+     BGColorHold2    = GColorWhite;
 
-     GColor TEXTCOLOR = GColorWhite;
+     GColor TEXTCOLOR1 = GColorWhite;
+     GColor TEXTCOLOR2 = GColorBlack;
      TextColorHold1   = GColorWhite;
-     TextColorHold2   = GColorWhite;
+     TextColorHold2   = GColorBlack;
   #else
      GColor BGCOLOR1 = GColorBlue;
-  
      GColor BGCOLOR2 = GColorDarkGreen;
      BGColorHold2 = GColorDarkGreen;
 
-     GColor TEXTCOLOR = GColorWhite;
+     GColor TEXTCOLOR1 = GColorWhite;
+     GColor TEXTCOLOR2 = GColorWhite;
      TextColorHold1   = GColorWhite;
      TextColorHold2   = GColorWhite;
  #endif
@@ -1014,7 +1030,6 @@ void handle_init(void) {
 
   fontMonaco13           = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MONACO_13));
   fontRobotoBoldSubset30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_30));
-  fontRobotoBoldSubset35 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_BOLD_SUBSET_35));
   
   Layer *window_layer = window_get_root_layer(window);
   
@@ -1060,19 +1075,19 @@ void handle_init(void) {
   text_layer_set_text(text_location_layer, text_location); 
   text_layer_set_font(text_location_layer, fontMonaco13);
   text_layer_set_background_color(text_location_layer, BGCOLOR1);
-  text_layer_set_text_color(text_location_layer, TEXTCOLOR);
+  text_layer_set_text_color(text_location_layer, TEXTCOLOR1);
   layer_add_child(window_layer, text_layer_get_layer(text_location_layer));
   
   // Date 1
   #ifdef PBL_PLATFORM_CHALK
-    text_date_layer = text_layer_create(GRect(1, 57, 180, 22));
+    text_date_layer = text_layer_create(GRect(3, 57, 180, 22));
     text_layer_set_text_alignment(text_date_layer, GTextAlignmentLeft);;
   #else
     text_date_layer = text_layer_create(GRect(1, 18, 144, 22));
     text_layer_set_text_alignment(text_date_layer, GTextAlignmentCenter);; 
   #endif
   
-  text_layer_set_text_color(text_date_layer, TEXTCOLOR);
+  text_layer_set_text_color(text_date_layer, TEXTCOLOR1);
   text_layer_set_background_color(text_date_layer, BGCOLOR1);
   text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
   layer_add_child(window_layer, text_layer_get_layer(text_date_layer));
@@ -1081,27 +1096,26 @@ void handle_init(void) {
   #ifdef PBL_PLATFORM_CHALK
      text_degrees_layer = text_layer_create(GRect(125, 65, 40, 17)); 
   #else
-     text_degrees_layer = text_layer_create(GRect(99, 55, 40, 17));
+     text_degrees_layer = text_layer_create(GRect(100, 55, 40, 17));
   #endif
  
   text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		
   text_layer_set_text(text_degrees_layer, text_degrees); 
   text_layer_set_font(text_degrees_layer, fontMonaco13);
   text_layer_set_background_color(text_degrees_layer, BGCOLOR1);
-  text_layer_set_text_color(text_degrees_layer, TEXTCOLOR);
+  text_layer_set_text_color(text_degrees_layer, TEXTCOLOR1);
   layer_add_child(window_layer, text_layer_get_layer(text_degrees_layer));
   
   
   // Time of Day 1
   #ifdef PBL_PLATFORM_CHALK
      text_time_layer = text_layer_create(GRect(1, 6, 180, 40)); // 
-     text_layer_set_font(text_time_layer, fontRobotoBoldSubset30);
   #else
-     text_time_layer = text_layer_create(GRect(1, 40, 104, 40)); 
-     text_layer_set_font(text_time_layer, fontRobotoBoldSubset35);
+     text_time_layer = text_layer_create(GRect(5, 40, 100, 40)); 
   #endif
   
-  text_layer_set_text_color(text_time_layer, TEXTCOLOR);
+  text_layer_set_font(text_time_layer, fontRobotoBoldSubset30); 
+  text_layer_set_text_color(text_time_layer, TEXTCOLOR1);
   text_layer_set_background_color(text_time_layer, BGCOLOR1);
   text_layer_set_text_alignment(text_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
@@ -1119,14 +1133,14 @@ void handle_init(void) {
   
   // Date 2
   #ifdef PBL_PLATFORM_CHALK
-     text_date2_layer = text_layer_create(GRect(1, 94, 180, 29));
+     text_date2_layer = text_layer_create(GRect(3, 94, 180, 29));
      text_layer_set_text_alignment(text_date2_layer, GTextAlignmentLeft);;
   #else
      text_date2_layer = text_layer_create(GRect(1, 106, 144, 22));
      text_layer_set_text_alignment(text_date2_layer, GTextAlignmentCenter);;
   #endif
   
-  text_layer_set_text_color(text_date2_layer, TEXTCOLOR);
+  text_layer_set_text_color(text_date2_layer, TEXTCOLOR2);
   text_layer_set_background_color(text_date2_layer, BGCOLOR2);
   text_layer_set_font(text_date2_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
   layer_add_child(window_layer, text_layer_get_layer(text_date2_layer));
@@ -1134,13 +1148,12 @@ void handle_init(void) {
   // Time 2
   #ifdef PBL_PLATFORM_CHALK
      text_time2_layer = text_layer_create(GRect(1, 135, 180, 40));
-     text_layer_set_font(text_time2_layer,fontRobotoBoldSubset30);
   #else
-    text_time2_layer = text_layer_create(GRect(1, 127, 104, 40));
-    text_layer_set_font(text_time2_layer,fontRobotoBoldSubset35);
+    text_time2_layer = text_layer_create(GRect(5, 127, 100, 40));
   #endif
   
-  text_layer_set_text_color(text_time2_layer, TEXTCOLOR);
+  text_layer_set_font(text_time2_layer,fontRobotoBoldSubset30);
+  text_layer_set_text_color(text_time2_layer, TEXTCOLOR2);
   text_layer_set_background_color(text_time2_layer, BGCOLOR2);
   text_layer_set_text_alignment(text_time2_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_time2_layer)); 
@@ -1156,7 +1169,7 @@ void handle_init(void) {
   text_layer_set_text(text_location2_layer, text_location2); 
   text_layer_set_font(text_location2_layer, fontMonaco13);
   text_layer_set_background_color(text_location2_layer, BGCOLOR2);
-  text_layer_set_text_color(text_location2_layer, TEXTCOLOR);
+  text_layer_set_text_color(text_location2_layer, TEXTCOLOR2);
   layer_add_child(window_layer, text_layer_get_layer(text_location2_layer));
   
   //Bluetooth Logo Setup area
@@ -1169,7 +1182,7 @@ void handle_init(void) {
   BTLayer = layer_create(BTArea);
 
   layer_add_child(window_layer, BTLayer);
-  layer_set_update_proc(BTLayer, BTLine_update_callback);
+  layer_set_update_proc(BTLayer, BTLine_update_callback); 
     
   bluetooth_connection_service_subscribe(&handle_bluetooth);
 
