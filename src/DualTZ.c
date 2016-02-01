@@ -939,7 +939,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
                   snprintf(text_degrees, 5, "%dC ", tempint); //Temp Degrees C
                 }  
            } 
-        
+
            text_layer_set_text(text_degrees_layer, text_degrees); 
            APP_LOG(APP_LOG_LEVEL_WARNING, "    Temp Output: %s\n", text_degrees);        
        
@@ -1085,7 +1085,7 @@ void handle_init(void) {
   
   // Date 1
   #ifdef PBL_PLATFORM_CHALK
-    text_date_layer = text_layer_create(GRect(3, 57, 180, 22));
+    text_date_layer = text_layer_create(GRect(3, 57, 135, 22));
     text_layer_set_text_alignment(text_date_layer, GTextAlignmentLeft);;
   #else
     text_date_layer = text_layer_create(GRect(1, 18, 144, 22));
@@ -1096,25 +1096,11 @@ void handle_init(void) {
   text_layer_set_background_color(text_date_layer, BGCOLOR1);
   text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
   layer_add_child(window_layer, text_layer_get_layer(text_date_layer));
-
-  //Temperature
-  #ifdef PBL_PLATFORM_CHALK
-     text_degrees_layer = text_layer_create(GRect(130, 65, 40, 14)); 
-  #else
-     text_degrees_layer = text_layer_create(GRect(100, 55, 40, 17));
-  #endif
+  
  
-  text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		
-  text_layer_set_text(text_degrees_layer, text_degrees); 
-  text_layer_set_font(text_degrees_layer, fontMonaco13);
-  text_layer_set_background_color(text_degrees_layer, BGCOLOR1);
-  text_layer_set_text_color(text_degrees_layer, TEXTCOLOR1);
-  layer_add_child(window_layer, text_layer_get_layer(text_degrees_layer));
-  
-  
   // Time of Day 1
   #ifdef PBL_PLATFORM_CHALK
-     text_time_layer = text_layer_create(GRect(1, 6, 180, 40)); // 
+     text_time_layer = text_layer_create(GRect(1, 6, 180, 40)); 
   #else
      text_time_layer = text_layer_create(GRect(5, 40, 100, 40)); 
   #endif
@@ -1125,7 +1111,22 @@ void handle_init(void) {
   text_layer_set_text_alignment(text_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
   
-   // Battery Line
+   //Temperature
+  #ifdef PBL_PLATFORM_CHALK
+    text_degrees_layer = text_layer_create(GRect(141, 63, 39, 17)); 
+    text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentLeft);		
+  #else
+     text_degrees_layer = text_layer_create(GRect(100, 55, 40, 17));
+     text_layer_set_text_alignment(text_degrees_layer, GTextAlignmentRight);		
+  #endif
+ 
+  text_layer_set_text(text_degrees_layer, text_degrees); 
+  text_layer_set_font(text_degrees_layer, fontMonaco13);
+  text_layer_set_background_color(text_degrees_layer, BGCOLOR1);
+  text_layer_set_text_color(text_degrees_layer, TEXTCOLOR1);
+  layer_add_child(window_layer, text_layer_get_layer(text_degrees_layer));
+  
+    // Battery Line
   #ifdef PBL_PLATFORM_CHALK
       GRect battery_line_frame = GRect(38, 84, 104, 6);
   #else
@@ -1136,9 +1137,11 @@ void handle_init(void) {
   layer_set_update_proc(BatteryLineLayer, battery_line_layer_update_callback);
   layer_add_child(window_layer, BatteryLineLayer);
   
+  
+  
   // Date 2
   #ifdef PBL_PLATFORM_CHALK
-     text_date2_layer = text_layer_create(GRect(3, 94, 180, 29));
+     text_date2_layer = text_layer_create(GRect(3, 94, 177, 29));
      text_layer_set_text_alignment(text_date2_layer, GTextAlignmentLeft);;
   #else
      text_date2_layer = text_layer_create(GRect(1, 106, 144, 22));
@@ -1179,7 +1182,7 @@ void handle_init(void) {
   
   //Bluetooth Logo Setup area
   #ifdef PBL_PLATFORM_CHALK
-     GRect BTArea = GRect(135, 96, 20, 20);
+     GRect BTArea = GRect(139, 96, 20, 20);
   #else
      GRect BTArea = GRect(110, 138, 20, 20);
   #endif
