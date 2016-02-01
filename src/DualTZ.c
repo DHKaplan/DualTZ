@@ -431,20 +431,27 @@ void ProcessHexColor() {
 void ProcessTimeZone() {
   char strHours[]="12";
   char strMin[] = "30";
-  
+        APP_LOG(APP_LOG_LEVEL_ERROR, "==============================");
+
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Persist UTC Offset= %s", PersistUTCOffset);
   memmove(strSign,  &PersistUTCOffset[0], 1);
   memmove(strHours, &PersistUTCOffset[1], 2);
   memmove(strMin,   &PersistUTCOffset[4], 2);
   
   intUTCoffsethrs = atoi(strHours);
   intUTCoffsetmin = atoi(strMin);
-  
-  if(strcmp(strSign, "+")) {
-    intUTCAdjust = (intUTCoffsethrs * -3600) - (intUTCoffsetmin * 60);
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Sign = %s in Process Time Zone", strSign);
+
+  if(strcmp(strSign, "+") == 0) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "+ in sign test");
+      intUTCAdjust = (intUTCoffsethrs * 3600) + (intUTCoffsetmin * 60);
   } else {
-    intUTCAdjust = (intUTCoffsethrs * 3600) + (intUTCoffsetmin * 60);
-  }  
+      APP_LOG(APP_LOG_LEVEL_ERROR, "- in sign test");
+      intUTCAdjust = -(intUTCoffsethrs * 3600) - (intUTCoffsetmin * 60);
+  } 
+    
 }
+
 void ProcessNoBTPersist() {
      if(persist_exists(LOCAL_BG_COLOR_KEY)) {
         persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
@@ -551,11 +558,9 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
      // Adjust for gmtime 
      ProcessTimeZone(); //convert from character 12:32 to nunmber of seconds to adjust
 
-    if(strcmp(strSign, "+")) {
-          seconds_since_epoch = seconds_since_epoch + intUTCAdjust;
-     } else {
-          seconds_since_epoch = seconds_since_epoch - intUTCAdjust;
-     }
+     APP_LOG(APP_LOG_LEVEL_ERROR, "Adjust: %d seconds in Handle_tick", intUTCAdjust);
+     seconds_since_epoch = seconds_since_epoch + intUTCAdjust;
+   
     
      //convert seconds since epoch into structure for gmt time
      struct tm* gmtinfo = gmtime(&seconds_since_epoch);
@@ -1094,7 +1099,7 @@ void handle_init(void) {
 
   //Temperature
   #ifdef PBL_PLATFORM_CHALK
-     text_degrees_layer = text_layer_create(GRect(125, 65, 40, 17)); 
+     text_degrees_layer = text_layer_create(GRect(130, 65, 40, 14)); 
   #else
      text_degrees_layer = text_layer_create(GRect(100, 55, 40, 17));
   #endif

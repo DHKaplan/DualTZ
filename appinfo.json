@@ -52,7 +52,6 @@
     "sdkVersion": "3",
     "shortName": "DualTZ",
     "targetPlatforms": [
-        "aplite",
         "basalt",
         "chalk"
     ],
