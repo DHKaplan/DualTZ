@@ -54,13 +54,14 @@ static char UTCOffsetConfig[]   = "+00:00";
 static char strSign[]           = "+";
 static char time_text[]         = "00:00a ";
 static char time2_text[]        = "00:00a ";
+static char gmttime_text[]      = "00:00a ";
 static char date_text[]         = "  Dec 26, 2015";
 static char date2_text[]        = "  Dec 26, 2015";
 static char seconds_text[]      = "00";
 static char date_format[]       = "  %a %m/%d/%y";
 static char text_location[18]   = "N/A";
 static char text_location2[18]  = "N/A";
-static char text_degrees[]      = "N/A";
+static char text_degrees[]      = "N/A ";
 static char HexIn[]             = "A";
 static char DoubleHexIn[]       = "AA";
 static char hexColorHold[]      = "0xFF0000";
@@ -80,6 +81,8 @@ GColor TextColorHold1;
 GColor TextColorHold2;
 GColor BGColorHold2;
 GColor ColorHold;
+
+time_t local, utc;
    
 void handle_battery(BatteryChargeState charge_state) {
   batterychargepct = charge_state.charge_percent;
@@ -431,22 +434,17 @@ void ProcessHexColor() {
 void ProcessTimeZone() {
   char strHours[]="12";
   char strMin[] = "30";
-        APP_LOG(APP_LOG_LEVEL_ERROR, "==============================");
 
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Persist UTC Offset= %s", PersistUTCOffset);
   memmove(strSign,  &PersistUTCOffset[0], 1);
   memmove(strHours, &PersistUTCOffset[1], 2);
   memmove(strMin,   &PersistUTCOffset[4], 2);
   
   intUTCoffsethrs = atoi(strHours);
   intUTCoffsetmin = atoi(strMin);
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Sign = %s in Process Time Zone", strSign);
 
   if(strcmp(strSign, "+") == 0) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "+ in sign test");
       intUTCAdjust = (intUTCoffsethrs * 3600) + (intUTCoffsetmin * 60);
   } else {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "- in sign test");
       intUTCAdjust = -(intUTCoffsethrs * 3600) - (intUTCoffsetmin * 60);
   } 
     
@@ -555,44 +553,61 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
         ProcessNoBTPersist();
     }  
     
-     // Adjust for gmtime 
-     ProcessTimeZone(); //convert from character 12:32 to nunmber of seconds to adjust
-
-     APP_LOG(APP_LOG_LEVEL_ERROR, "Adjust: %d seconds in Handle_tick", intUTCAdjust);
-     seconds_since_epoch = seconds_since_epoch + intUTCAdjust;
-   
-    
-     //convert seconds since epoch into structure for gmt time
-     struct tm* gmtinfo = gmtime(&seconds_since_epoch);
- 
      if (clock_is_24h_style()) {
         strcpy(time_format,"%R%"); //24 hour HH:MM
      } else {
         strcpy(time_format,"%I:%M%P"); //12 hour HH:MM   %p = AM/PM
      }
     
+    //Process Local Time
      strftime(time_text, sizeof(time_text), time_format, tick_time);
-
+    
      if(!clock_is_24h_style()) {
         strncpy(time_hold, time_text, 6);
         strcpy(time_text, time_hold);
-     }  
-    
-     strftime(time2_text, sizeof(time2_text), time_format, gmtinfo);
+     } 
+     
+     text_layer_set_text(text_time_layer,  time_text);
+     APP_LOG(APP_LOG_LEVEL_INFO, "%d seconds adjusted in Handle_tick", intUTCAdjust);
 
-     if (!clock_is_24h_style()) { 
-         strncpy(time_hold, time2_text, 6);
-         strcpy(time2_text, time_hold);
-     }  
-         
+     APP_LOG(APP_LOG_LEVEL_INFO, "%s = Local Time", time_text);
+       
+     //Process GMT for testing purposes
+     struct tm* gmtinfo = gmtime(&seconds_since_epoch);
+     strftime(gmttime_text, sizeof(time_text), time_format, gmtinfo);
+    
+     if(!clock_is_24h_style()) {
+        strncpy(time_hold, gmttime_text, 6);
+        strcpy(gmttime_text, time_hold);
+     } 
+     
+     APP_LOG(APP_LOG_LEVEL_INFO, "%s = GMT", gmttime_text);
+    
+    // Adjust for TZ2
+     ProcessTimeZone(); //convert from character 12:32 to nunmber of seconds to adjust
+
+     seconds_since_epoch = seconds_since_epoch + intUTCAdjust;
+   
+     //convert seconds since epoch into structure for gmt time
+     struct tm* tz2info = gmtime(&seconds_since_epoch);
+     strftime(time2_text, sizeof(time_text), time_format, tz2info);
+
+    if(!clock_is_24h_style()) {
+        strncpy(time_hold, time2_text, 6);
+        strcpy(time2_text, time_hold);
+     }   
+     
+     text_layer_set_text(text_time2_layer, time2_text);  
+
+     APP_LOG(APP_LOG_LEVEL_INFO, "%s = TZ2", time2_text);
+     APP_LOG(APP_LOG_LEVEL_ERROR, "==============================");
+   
      strftime(date_text,  sizeof(date_text), date_format, tick_time);
      strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);   
     
      text_layer_set_text(text_date_layer,  date_text);
      text_layer_set_text(text_date2_layer, date2_text);
    
-     text_layer_set_text(text_time_layer,  time_text);
-     text_layer_set_text(text_time2_layer, time2_text);  
     
   }  // End of First Time or 00 seconds
 
@@ -956,6 +971,19 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
    WxLocationCall = 0;   
  }     
  
+ /* Tuple *timezone_offset_tuple = dict_find(iterator, TIMEZONE_KEY);
+
+  if (timezone_offset_tuple) {
+    int32_t timezone_offset = timezone_offset_tuple->value->int32;
+
+    // Calculate UTC time
+    time(&local);
+    utc = local + timezone_offset;
+    
+    char utc_text;
+    strftime(utc_text, sizeof(utc_text), "%R%", utc);
+
+  }*/
 }
 
 void handle_appfocus(bool in_focus){
