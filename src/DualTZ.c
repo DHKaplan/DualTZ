@@ -451,6 +451,7 @@ void ProcessTimeZone() {
 }
 
 void ProcessNoBTPersist() {
+     APP_LOG(APP_LOG_LEVEL_ERROR, "In ProcessNoBTPersist");
      if(persist_exists(LOCAL_BG_COLOR_KEY)) {
         persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
           
@@ -971,24 +972,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
    WxLocationCall = 0;   
  }     
  
- /* Tuple *timezone_offset_tuple = dict_find(iterator, TIMEZONE_KEY);
-
-  if (timezone_offset_tuple) {
-    int32_t timezone_offset = timezone_offset_tuple->value->int32;
-
-    // Calculate UTC time
-    time(&local);
-    utc = local + timezone_offset;
-    
-    char utc_text;
-    strftime(utc_text, sizeof(utc_text), "%R%", utc);
-
-  }*/
 }
 
 void handle_appfocus(bool in_focus){
     if (in_focus) {
-        FirstTime = 0;
+        FirstTime = 0;        
     }
 }
 void inbox_dropped_callback(AppMessageResult reason, void *context) {
@@ -1066,8 +1054,6 @@ void handle_init(void) {
   
   Layer *window_layer = window_get_root_layer(window);
   
-  tick_timer_service_subscribe(SECOND_UNIT, handle_tick);
-
   // Register callbacks
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -1228,6 +1214,18 @@ void handle_init(void) {
 
   handle_battery(battery_state_service_peek());
   handle_bluetooth(bluetooth_connection_service_peek());
+  
+  ProcessNoBTPersist();
+ 
+    tick_timer_service_subscribe(SECOND_UNIT, handle_tick);
+
+  // Ensures time is displayed immediately (will break if NULL tick event accessed).
+  // (This is why it's a good idea to have a separate routine to do the update itself.)
+  time_t now = time(NULL);
+  struct tm *current_time = localtime(&now);
+  handle_tick(current_time, SECOND_UNIT);
+
+
  
 }
 int main(void) {
