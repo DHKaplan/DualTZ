@@ -179,10 +179,11 @@ void BTLine_update_callback(Layer *BTLayer, GContext* BT1ctx) {
        GPoint BTLinePointStart;
        GPoint BTLinePointEnd;
       
-      if ((BTConnected == 0) && (PersistBTLoss == 1)) {
+      if ((BTConnected == 0) && (PersistBTLoss == 1) && (BTVibesDone == 0)) {
               BTVibesDone = 1;
               vibes_long_pulse();
       }
+  
       if(BTConnected == 0) {   
           graphics_context_set_stroke_color(BT1ctx, GColorRed);
           graphics_context_set_fill_color(BT1ctx, GColorWhite);
@@ -454,7 +455,7 @@ void ProcessNoBTPersist() {
      APP_LOG(APP_LOG_LEVEL_ERROR, "In ProcessNoBTPersist");
      if(persist_exists(LOCAL_BG_COLOR_KEY)) {
         persist_read_string(LOCAL_BG_COLOR_KEY, PersistLocalBG, sizeof(PersistLocalBG));
-          
+  
         strcpy(hexColorHold, PersistLocalBG);
         ProcessHexColor();
         
@@ -505,6 +506,8 @@ void ProcessNoBTPersist() {
     }      
     
     if(persist_exists(DATE_FORMAT_KEY)) {
+      PersistDateFormat = persist_read_int(DATE_FORMAT_KEY);
+
        #ifdef PBL_PLATFORM_CHALK
              if (PersistDateFormat == 1) { // US
                // strcpy(date_format, "  %b %e, %Y"); Jan 01, 2015
@@ -567,7 +570,7 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
         strncpy(time_hold, time_text, 6);
         strcpy(time_text, time_hold);
      } 
-     
+    
      text_layer_set_text(text_time_layer,  time_text);
      APP_LOG(APP_LOG_LEVEL_INFO, "%d seconds adjusted in Handle_tick", intUTCAdjust);
 
@@ -602,7 +605,9 @@ void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
 
      APP_LOG(APP_LOG_LEVEL_INFO, "%s = TZ2", time2_text);
      APP_LOG(APP_LOG_LEVEL_ERROR, "==============================");
-   
+     
+     
+     APP_LOG(APP_LOG_LEVEL_INFO, "In Handle Tick-Date Format = %d, 1 = US, 0 = Foreign", PersistDateFormat);
      strftime(date_text,  sizeof(date_text), date_format, tick_time);
      strftime(date2_text, sizeof(date2_text), date_format, gmtinfo);   
     
@@ -1065,9 +1070,9 @@ void handle_init(void) {
 
   //Local Time Layer
   #ifdef PBL_PLATFORM_CHALK
-    text_local_layer = text_layer_create(GRect(1, 1, 180, 80)); 
+    text_local_layer = text_layer_create(GRect(1, 1, 180, 90)); 
   #else
-    text_local_layer = text_layer_create(GRect(1, 1, 144, 92)); 
+    text_local_layer = text_layer_create(GRect(1, 1, 144, 84)); 
   #endif 
   
   text_layer_set_background_color(text_local_layer, BGCOLOR1);
@@ -1075,9 +1080,9 @@ void handle_init(void) {
   
   //TZ2 Layer
   #ifdef PBL_PLATFORM_CHALK
-    text_TZ2_layer = text_layer_create(GRect(1, 127, 180, 53)); 
+    text_TZ2_layer = text_layer_create(GRect(1, 90, 180, 90)); 
   #else
-    text_TZ2_layer = text_layer_create(GRect(1, 127, 144, 41));   
+    text_TZ2_layer = text_layer_create(GRect(1, 84, 144, 84));   
   #endif
  
   text_layer_set_background_color(text_TZ2_layer, BGCOLOR2);
@@ -1142,9 +1147,9 @@ void handle_init(void) {
   
     // Battery Line
   #ifdef PBL_PLATFORM_CHALK
-      GRect battery_line_frame = GRect(38, 84, 104, 6);
+      GRect battery_line_frame = GRect(38, 87, 104, 6);
   #else
-      GRect battery_line_frame = GRect(22, 84, 104, 6);
+      GRect battery_line_frame = GRect(22, 87, 104, 6);
   #endif
   
   BatteryLineLayer = layer_create(battery_line_frame);
@@ -1216,8 +1221,8 @@ void handle_init(void) {
   handle_bluetooth(bluetooth_connection_service_peek());
   
   ProcessNoBTPersist();
- 
-    tick_timer_service_subscribe(SECOND_UNIT, handle_tick);
+    
+  tick_timer_service_subscribe(SECOND_UNIT, handle_tick);
 
   // Ensures time is displayed immediately (will break if NULL tick event accessed).
   // (This is why it's a good idea to have a separate routine to do the update itself.)
