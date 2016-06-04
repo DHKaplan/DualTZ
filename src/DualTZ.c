@@ -1149,7 +1149,7 @@ void handle_init(void) {
   #ifdef PBL_PLATFORM_CHALK
       GRect battery_line_frame = GRect(38, 87, 104, 6);
   #else
-      GRect battery_line_frame = GRect(22, 87, 104, 6);
+      GRect battery_line_frame = GRect(22, 81, 104, 6);
   #endif
   
   BatteryLineLayer = layer_create(battery_line_frame);
