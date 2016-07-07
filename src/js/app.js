@@ -1,38 +1,11 @@
-var myAPIKey = "ebe0a78125281118a038b2a62aab07c8";
+'use strict';
 
-Pebble.addEventListener('showConfiguration', function(e) {
-     var colorCapable = ((typeof Pebble.getActiveWatchInfo === "function") && Pebble.getActiveWatchInfo().platform!='aplite');
-     
-     if(colorCapable == true) {
-       
-        // Show config page
-        console.log("addEventListener: showConfigurationPage Color\n");
-        Pebble.openURL('http://www.wticalumni.com/DHK/Dual-TZ-V1.00.htm');
-     } else {
-        console.log("addEventListener: showConfigurationPage Aplite\n");
-        Pebble.openURL('http://www.wticalumni.com/DHK/Dual-TZ-V1.00Aplite.htm');
-     }
-});
+var Clay = require('pebble-clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig);
 
-Pebble.addEventListener('webviewclosed',
 
-    function(e) {
-        var dict = JSON.parse(decodeURIComponent(e.response));
-
-      //Send a string to Pebble
-        Pebble.sendAppMessage(dict,
-
-            function(e) {
-                console.log("   webviewclosed Send successful.");
-            },
-
-            function(e) {
-                console.log("   webviewclosed Send failed!");
-            });
-    });
-
-//********************************************************************
-
+//********************************************************
 var xhrRequest = function(url, type, callback) {
     var xhr = new XMLHttpRequest();
     xhr.onload = function() {
@@ -43,6 +16,8 @@ var xhrRequest = function(url, type, callback) {
 };
 
 function locationSuccess(pos) {
+    var myAPIKey = "ebe0a78125281118a038b2a62aab07c8";
+
     // Construct URL
     var url = "http://api.openweathermap.org/data/2.5/weather?lat=" +
         pos.coords.latitude + "&lon=" + pos.coords.longitude + '&appid=' + myAPIKey;
@@ -57,19 +32,21 @@ function locationSuccess(pos) {
 
             // Temperature in Kelvin requires adjustment
             var tempC = Math.round(json.main.temp - 273.15);
-            console.log("Temperature C is " + tempC);
+           
 
             // City
             var city = json.name;
-            console.log("City is " + city);
 
             // Assemble dictionary using our keys
             var dictionary = {
-                "WEATHER_TEMPERATURE_KEY": tempC + "\u00B0C",
+                "WEATHER_TEMPERATURE_KEY": tempC, // + "\u00B0C",
                 "WEATHER_CITY_KEY": city
             };
 
             // Send to Pebble
+            console.log("Temperature C is " + tempC);
+            console.log("City is " + city);
+          
             Pebble.sendAppMessage(dictionary,
                 function(e) {
                     console.log("Weather info sent to Pebble successfully!");
