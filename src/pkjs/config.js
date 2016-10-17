@@ -213,7 +213,7 @@ module.exports = [
     },
     {
     "type": "text",
-    "defaultValue": "Dual Time Zone By WA1OUI V4.1",
+    "defaultValue": "Dual Time Zone By WA1OUI V4.2",
           },
       //**************    
       {  

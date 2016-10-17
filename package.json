@@ -30,7 +30,7 @@
         "resources": {
             "media": [
                 {
-                    "file": "images/DualtTZ-menu-icon",
+                    "file": "images/DualTZ-men-icon.png",
                     "menuIcon": true,
                     "name": "IMAGE_MENU_ICON",
                     "targetPlatforms": null,
@@ -68,5 +68,5 @@
             "watchface": true
         }
     },
-    "version": "4.1.0"
+    "version": "4.2.0"
 }
